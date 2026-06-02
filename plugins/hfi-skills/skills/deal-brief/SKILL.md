@@ -1,6 +1,6 @@
 ---
 name: deal-brief
-description: Produce a concise briefing on an HFI deal: the record, key parameters, open questions, action items, and recent activity, pulled from the deal pipeline. Use when asked to brief, summarize, or get up to speed on a deal before a call or meeting.
+description: "Produce a concise briefing on an HFI deal, covering the record, key parameters, open questions, action items, and recent activity pulled from the deal pipeline. Use when asked to brief, summarize, or get up to speed on a deal before a call or meeting."
 ---
 
 # Deal brief
