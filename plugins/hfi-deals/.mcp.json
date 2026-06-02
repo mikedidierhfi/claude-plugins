@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hfi-deals": {
+      "type": "http",
+      "url": "https://mcp.8.232.203.15.nip.io/mcp/?toolset=all"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "hfi-skills",
+  "version": "0.0.0",
+  "description": "HFI-authored Claude skills (term sheets, IC memos, deal workflows). Scaffold only. Add skills under skills/<name>/SKILL.md, then list this plugin in the root .claude-plugin/marketplace.json to publish it.",
+  "author": {
+    "name": "HFI Capital Management",
+    "email": "mdidier@hershfi.com"
+  },
+  "keywords": ["hfi", "skills"]
+}

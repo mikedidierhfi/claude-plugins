@@ -1,0 +1,17 @@
+{
+  "name": "hfi",
+  "owner": {
+    "name": "HFI Capital Management",
+    "email": "mdidier@hershfi.com"
+  },
+  "metadata": {
+    "description": "HFI Capital Management internal Claude plugins. Connects Claude (Cowork, Desktop, Code) to the deal pipeline and HFI workflows."
+  },
+  "plugins": [
+    {
+      "name": "hfi-deals",
+      "source": "./plugins/hfi-deals",
+      "description": "Connect Claude to the HFI deal pipeline: browse the kanban, search every deal with RAG, read emails and attachments, update deals. Signs in with your HFI Google account; no token to paste."
+    }
+  ]
+}

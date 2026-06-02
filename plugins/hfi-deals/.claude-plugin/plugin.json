@@ -1,0 +1,10 @@
+{
+  "name": "hfi-deals",
+  "version": "0.1.0",
+  "description": "Connects Claude to the HFI deal pipeline: kanban browse, per-deal RAG search, email/attachment/meeting-note bodies, fact sheets, and write tools (resolve open items, add notes, move on kanban). Every write attributes to the teammate's Google account so the deal activity feed mirrors web-UI changes.",
+  "author": {
+    "name": "HFI Capital Management",
+    "email": "mdidier@hershfi.com"
+  },
+  "keywords": ["hfi", "deal-intake", "mcp", "private-equity", "real-estate"]
+}
