@@ -1,8 +1,7 @@
 {
   "name": "hfi",
   "owner": {
-    "name": "HFI Capital Management",
-    "email": "mdidier@hershfi.com"
+    "name": "HFI Capital Management"
   },
   "metadata": {
     "description": "HFI Capital Management internal Claude plugins. Connects Claude (Cowork, Desktop, Code) to the deal pipeline and HFI workflows."

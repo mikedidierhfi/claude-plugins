@@ -1,38 +1,38 @@
 # HFI Deals
 
-Connects Claude to the HFI deal pipeline. Read every deal email, attachment, meeting note, and fact sheet. Search across the portfolio with RAG. Update notes, resolve open questions, move deals on the kanban. Every change attributes to your Google account, so the deal activity feed mirrors what you would see if you did it in the web UI.
+Connects Claude to the HFI deal pipeline. Read deal emails, attachments, meeting notes, and fact sheets. Search across the portfolio with RAG. Update notes, resolve open questions, move deals on the kanban. Every change attributes to your Google account, so the activity feed mirrors what you would see if you did it in the web UI.
 
 ## Setup
 
-**There is no token to paste.** Install the plugin, restart Claude, and sign in with your HFI Google account when prompted.
+There is no token to paste. Install the plugin, restart Claude, and sign in with your HFI Google account when prompted.
 
-Behind the scenes the plugin uses OAuth: the first time Claude tries to use a deal tool, Google's standard sign-in pops up. After you approve, Claude has a session that is valid for an hour and refreshes automatically. Your email becomes the attribution on every change you make through Claude.
+The plugin uses OAuth: the first time Claude uses a deal tool, Google's standard sign-in appears. After you approve, Claude has a session that lasts an hour and refreshes automatically. Your email becomes the attribution on every change you make.
 
 ## What you get
 
-About 40 tools your Claude can use without you having to name them. Sample workflows:
+About 40 tools your Claude can use without naming them. Examples of what you can ask:
 
-- **Browse the kanban** "What deals are in IPC review this week?"
-- **One-deal dive** "Tell me everything about CW Stoneworks." Claude pulls the full record, structured params, open questions, meeting notes, attachment manifest.
-- **Read a document** "Read the OM for CW Stoneworks." Claude lists attachments, picks the right one, returns the extracted text.
-- **Search the portfolio** "Which deals mentioned Houston industrial?" or "Everything we've seen from CW Capital."
-- **Update a deal** "Resolve the cap-rate question on CW Stoneworks with note 6.2%." Claude looks up the open item by text and marks it resolved with your email as the resolver.
+- Browse the board: "What deals are in review this week?"
+- One-deal dive: "Tell me everything about [deal name]." Claude pulls the full record, structured params, open questions, meeting notes, and the attachment list.
+- Read a document: "Read the OM for [deal name]." Claude lists the attachments, picks the right one, and returns the text.
+- Search the portfolio: "Which deals mention [market or theme]?" or "Everything we've seen from [sponsor]."
+- Update a deal: "Resolve the open question on [deal name] with this note." Claude finds the item by text and marks it resolved with your email.
 
 By default the plugin enables every tool including writes (`?toolset=all`). For a read-only session, change the URL in `.mcp.json` to `?toolset=browse,read,search,audit`.
 
 ## Who can use it
 
-Anyone with a hershfi.ai or hershfi.com Google account that is on the HFI MCP allowlist. If you sign in with an account that is not on the list, you will see "not authorized." Ask Mike to add you.
+Anyone with an HFI Google account (hershfi.ai or hershfi.com) that is on the access allowlist. If you sign in with an account that is not on the list, you will see "not authorized." Ask your HFI admin to add you.
 
 ## Trouble?
 
-- **Stuck at sign-in** close the browser tab, restart Claude, try again.
-- **"not_authorized" after sign-in** your Google email is not on the allowlist. Ask Mike to add you.
-- **Tools disappear mid-conversation** your session expired (1 hour). Start a new conversation; Claude re-authenticates automatically.
-- **Server unreachable** `https://mcp.8.232.203.15.nip.io/healthz` should return `{"status": "ok"}`. If not, alert Mike.
+- Stuck at sign-in: close the browser tab, restart Claude, try again.
+- "not_authorized" after sign-in: your Google email is not on the allowlist. Ask your HFI admin to add you.
+- Tools disappear mid-conversation: your session expired (1 hour). Start a new conversation; Claude re-authenticates automatically.
+- Server unreachable: `https://mcp.8.232.203.15.nip.io/healthz` should return `{"status": "ok"}`.
 
 ## Privacy and safety
 
-- The deal pipeline server logs every tool call (your email, tool name, duration, status) for 90 days.
-- Per-token rate limit: 120 tool calls per minute, 40 RAG-search calls per minute. Normal conversation will not get close.
-- Writes you trigger via Claude appear in the deal activity feed identical to writes from the web UI.
+- The server logs every tool call (your email, tool name, duration, status).
+- A per-user rate limit applies to tool calls and searches; normal use will not get close.
+- Writes you trigger via Claude appear in the activity feed identical to writes from the web UI.
