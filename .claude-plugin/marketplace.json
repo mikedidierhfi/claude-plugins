@@ -10,7 +10,7 @@
     {
       "name": "hfi-deals",
       "source": "./plugins/hfi-deals",
-      "description": "Connect Claude to the HFI deal pipeline: browse the kanban, search every deal with RAG, read emails and attachments, update deals. Signs in with your HFI Google account; no token to paste."
+      "description": "Bring the HFI deal pipeline into Claude: browse the board, search every deal and document with RAG, read OMs and meeting notes, track open items, and update deals in plain English. Sign in with your HFI Google account; no token to paste."
     }
   ]
 }

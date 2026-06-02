@@ -1,7 +1,7 @@
 {
   "name": "hfi-deals",
-  "version": "0.1.0",
-  "description": "Connects Claude to the HFI deal pipeline: kanban browse, per-deal RAG search, email/attachment/meeting-note bodies, fact sheets, and write tools (resolve open items, add notes, move on kanban). Every write attributes to the teammate's Google account so the deal activity feed mirrors web-UI changes.",
+  "version": "0.1.1",
+  "description": "Bring the HFI deal pipeline into Claude. Browse and search every deal and document with portfolio-wide RAG, read OMs and meeting notes, track and resolve open questions and action items, and update deals in plain English. Sign in with your HFI Google account; every change attributes to you in the activity feed, just like the web UI.",
   "author": {
     "name": "HFI Capital Management"
   },
