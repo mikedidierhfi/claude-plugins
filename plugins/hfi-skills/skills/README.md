@@ -1,29 +1,17 @@
 # HFI skills
 
-This is the home for HFI-authored skills. It is intentionally empty for now.
-
-To add a skill, create a folder here with a `SKILL.md` file:
+HFI-authored skills live here, one folder per skill with a `SKILL.md` inside:
 
 ```
 plugins/hfi-skills/skills/
-  term-sheet/
-    SKILL.md
-  ic-memo/
+  deal-brief/
     SKILL.md
 ```
 
-A `SKILL.md` starts with YAML frontmatter (`name`, `description`) followed by the instructions. The `description` is what Claude matches against to decide when to trigger the skill, so make it specific about when to use it and when not to.
+A `SKILL.md` is YAML frontmatter (`name`, `description`) followed by instructions. The `description` is what Claude matches on to decide when to run the skill, so be specific about when to use it and when not to.
 
-When at least one real skill is here, publish the plugin by adding it to the root `.claude-plugin/marketplace.json`:
+To add a skill: create the folder and `SKILL.md`, bump `version` in `../.claude-plugin/plugin.json`, validate with `claude plugin validate ./plugins/hfi-skills`, commit, and push. Installed copies update on the next sync.
 
-```json
-{
-  "name": "hfi-skills",
-  "source": "./plugins/hfi-skills",
-  "description": "HFI-authored skills: term sheets, IC memos, deal workflows."
-}
-```
+Many of these skills call the deal pipeline, so they work best when the user also has the `hfi-deals` plugin installed and is signed in.
 
-Bump `version` in this plugin's `.claude-plugin/plugin.json` each time you want installed copies to update.
-
-Note: only put HFI-original skills here. Anthropic's prebuilt skill packs (investment-banking, financial-analysis, private-equity, and so on) come from their own marketplaces. Have teammates add those marketplaces directly rather than copying that content into this repo.
+Only HFI-original skills go here. Anthropic's prebuilt skill packs come from their own marketplaces; do not copy that content in.

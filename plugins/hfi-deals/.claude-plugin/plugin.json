@@ -1,7 +1,7 @@
 {
   "name": "hfi-deals",
-  "version": "0.1.1",
-  "description": "Bring the HFI deal pipeline into Claude. Browse and search every deal and document with portfolio-wide RAG, read OMs and meeting notes, track and resolve open questions and action items, and update deals in plain English. Sign in with your HFI Google account; every change attributes to you in the activity feed, just like the web UI.",
+  "version": "0.1.2",
+  "description": "Bring the HFI deal pipeline into Claude: browse the board, search every deal and document with RAG, read OMs and meeting notes, and update deals in plain English. Pull deal data straight into your work, e.g. 'summarize the open items on [deal]' or 'pull the rent roll from the OM into this memo.' Sign in with your HFI Google account; changes attribute to you.",
   "author": {
     "name": "HFI Capital Management"
   },

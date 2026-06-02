@@ -10,7 +10,12 @@
     {
       "name": "hfi-deals",
       "source": "./plugins/hfi-deals",
-      "description": "Bring the HFI deal pipeline into Claude: browse the board, search every deal and document with RAG, read OMs and meeting notes, track open items, and update deals in plain English. Sign in with your HFI Google account; no token to paste."
+      "description": "Bring the HFI deal pipeline into Claude: browse, search, and read every deal and document, and pull deal data into your work, e.g. 'summarize the open items on [deal].' Update deals in plain English; sign in with your HFI Google account."
+    },
+    {
+      "name": "hfi-skills",
+      "source": "./plugins/hfi-skills",
+      "description": "HFI-authored skills for deal work, like briefing yourself on a deal in plain English. Pairs with the hfi-deals plugin, which the skills draw on for live deal data."
     }
   ]
 }

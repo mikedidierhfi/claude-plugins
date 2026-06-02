@@ -1,9 +1,9 @@
 {
   "name": "hfi-skills",
-  "version": "0.0.0",
-  "description": "HFI-authored Claude skills (term sheets, IC memos, deal workflows). Scaffold only. Add skills under skills/<name>/SKILL.md, then list this plugin in the root .claude-plugin/marketplace.json to publish it.",
+  "version": "0.1.0",
+  "description": "HFI's own Claude skills for deal work. Ask in plain English and the right skill runs, pulling what it needs from the deal pipeline, e.g. 'brief me on [deal] before my call.' Pairs with the hfi-deals plugin.",
   "author": {
     "name": "HFI Capital Management"
   },
-  "keywords": ["hfi", "skills"]
+  "keywords": ["hfi", "skills", "deal-flow", "private-equity", "real-estate"]
 }
