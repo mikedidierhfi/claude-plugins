@@ -22,7 +22,7 @@ By default the plugin enables every tool including writes (`?toolset=all`). For 
 
 ## Who can use it
 
-Anyone with an HFI Google account (hershfi.ai or hershfi.com) that is on the access allowlist. If you sign in with an account that is not on the list, you will see "not authorized." Ask your HFI admin to add you.
+Access is restricted to whitelisted HFI employees. If you sign in with an account that has not been added to the allowlist, you will see "not authorized." Ask your HFI admin to add you.
 
 ## Trouble?
 
