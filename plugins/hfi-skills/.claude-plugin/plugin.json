@@ -1,6 +1,6 @@
 {
   "name": "hfi-skills",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "HFI's own Claude skills for deal work. Ask in plain English and the right skill runs, pulling what it needs from the deal pipeline, e.g. 'brief me on [deal] before my call.' Pairs with the hfi-deals plugin.",
   "author": {
     "name": "HFI Capital Management"

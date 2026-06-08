@@ -1,0 +1,112 @@
+{
+  "_comment": "Ordered fallback lists of XBRL concepts for each line item. Resolver tries each in order and uses the first that has a value for the target period. 'taxonomy' is the namespace in companyfacts ('us-gaap' or 'dei'). 'kind' = instant (balance/point-in-time) or duration (flow/period). 'unit' hints the expected unit key.",
+  "shares_outstanding": {
+    "kind": "instant", "unit": "shares",
+    "tags": [
+      {"taxonomy": "dei", "tag": "EntityCommonStockSharesOutstanding"},
+      {"taxonomy": "us-gaap", "tag": "CommonStockSharesOutstanding"},
+      {"taxonomy": "us-gaap", "tag": "CommonStockSharesIssued"}
+    ]
+  },
+  "long_term_debt_noncurrent": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "LongTermDebtNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "LongTermDebtAndCapitalLeaseObligations"},
+      {"taxonomy": "us-gaap", "tag": "LongTermDebt"}
+    ]
+  },
+  "finance_lease_noncurrent": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "FinanceLeaseLiabilityNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "CapitalLeaseObligationsNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "FinanceLeaseLiability"}
+    ]
+  },
+  "operating_lease_noncurrent_optional": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "OperatingLeaseLiabilityNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "OperatingLeaseLiability"}
+    ]
+  },
+  "minority_interest": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "MinorityInterest"},
+      {"taxonomy": "us-gaap", "tag": "RedeemableNoncontrollingInterestEquityCarryingAmount"}
+    ]
+  },
+  "current_assets": {
+    "kind": "instant", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "AssetsCurrent"}]
+  },
+  "current_liabilities": {
+    "kind": "instant", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "LiabilitiesCurrent"}]
+  },
+  "cash_and_equivalents": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "CashAndCashEquivalentsAtCarryingValue"},
+      {"taxonomy": "us-gaap", "tag": "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"}
+    ]
+  },
+  "operating_income_ebit": {
+    "kind": "duration", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "OperatingIncomeLoss"}]
+  },
+  "depreciation_amortization": {
+    "kind": "duration", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "DepreciationDepletionAndAmortization"},
+      {"taxonomy": "us-gaap", "tag": "DepreciationAmortizationAndAccretionNet"},
+      {"taxonomy": "us-gaap", "tag": "DepreciationAndAmortization"},
+      {"taxonomy": "us-gaap", "tag": "Depreciation"}
+    ]
+  },
+  "amortization_intangibles_addon": {
+    "kind": "duration", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "AmortizationOfIntangibleAssets"}]
+  },
+  "net_income": {
+    "kind": "duration", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "NetIncomeLoss"},
+      {"taxonomy": "us-gaap", "tag": "ProfitLoss"}
+    ]
+  },
+  "cfo": {
+    "kind": "duration", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "NetCashProvidedByUsedInOperatingActivities"},
+      {"taxonomy": "us-gaap", "tag": "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"}
+    ]
+  },
+  "revenue": {
+    "kind": "duration", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "RevenueFromContractWithCustomerExcludingAssessedTax"},
+      {"taxonomy": "us-gaap", "tag": "Revenues"},
+      {"taxonomy": "us-gaap", "tag": "RevenueFromContractWithCustomerIncludingAssessedTax"},
+      {"taxonomy": "us-gaap", "tag": "SalesRevenueNet"}
+    ]
+  },
+  "interest_expense": {
+    "kind": "duration", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "InterestExpense"},
+      {"taxonomy": "us-gaap", "tag": "InterestExpenseNonoperating"},
+      {"taxonomy": "us-gaap", "tag": "InterestAndDebtExpense"}
+    ]
+  },
+  "income_tax_expense": {
+    "kind": "duration", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "IncomeTaxExpenseBenefit"}]
+  },
+  "eps_diluted": {
+    "kind": "duration", "unit": "USD-per-shares",
+    "tags": [{"taxonomy": "us-gaap", "tag": "EarningsPerShareDiluted"}]
+  }
+}
