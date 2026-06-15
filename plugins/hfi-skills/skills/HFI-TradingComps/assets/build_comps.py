@@ -309,6 +309,12 @@ def main(argv=None):
     ap.add_argument("--debt", help='override long-term debt IN $MM when it is under custom/related-party '
                     'tags the XBRL pull misses (verify in the 10-Q first), e.g. "TKR=1234.5"')
     ap.add_argument("--json", action="store_true", help="print the assembled structure as JSON")
+    ap.add_argument("--sources", action="store_true",
+                    help="print a markdown 'Sources & citations' block (clickable links + exact "
+                         "statement pages) for the chat reply; auto-printed whenever --xlsx is used")
+    ap.add_argument("--no-net-sources", action="store_true",
+                    help="in the sources block, skip the network lookup of exact statement-page URLs "
+                         "(filing-index links + XBRL citations only)")
     args = ap.parse_args(argv)
 
     def _parse_kv(s, num=True):
@@ -334,6 +340,10 @@ def main(argv=None):
         import build_comps_xlsx as bx
         path = bx.render(comps, args.xlsx)
         print("Wrote workbook:", path)
+    if args.xlsx or args.sources:
+        import sources_report as sr
+        print()
+        print(sr.build_sources_markdown(comps, args.out, with_statement_links=not args.no_net_sources))
     if args.json or not args.xlsx:
         print(json.dumps(comps, indent=2, default=str))
     return 0

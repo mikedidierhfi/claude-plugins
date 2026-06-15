@@ -115,6 +115,13 @@ what to do when a line item is missing or a filing is non-standard).
 - **Output:** the workbook is written to the working / outputs directory as
   `Trading_Comps_<tickers>_<date>.xlsx` and returned to the user (Cowork serves it from the outputs
   folder; in chat it's offered as a download). It is **formula-driven**, so it recomputes live in Excel.
+- **Always return the SOURCES block in the chat reply.** A `--xlsx` run prints a markdown
+  "Sources & citations" block (also via `build_comps.py --sources`) with clickable links to each
+  primary source AND **deep links to the exact statement pages** (balance sheet / income / cash-flow
+  R-files), plus the per-figure XBRL concept, form, period, and accession, and the LTM-bridge periods.
+  **Paste this block into your chat response verbatim** (don't summarize away the links) so the user
+  can click straight through to every number's source. Add the price source + timestamp and, if you
+  did the Phase-06 IR-deck cross-check, the deck URL/page too.
 - **SEC etiquette:** EDGAR wants a descriptive `User-Agent` (set in `fetch_edgar.py`; override via the
   `SEC_UA` env var with your name + email).
 - **Install:** load it through the Skills system (upload the skill folder, or the

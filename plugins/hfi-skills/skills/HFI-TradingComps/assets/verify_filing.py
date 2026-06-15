@@ -47,6 +47,25 @@ def find_balance_sheet(cik, accession):
     return None
 
 
+def find_statements(cik, accession):
+    """Best-effort URLs for the rendered core statements (balance sheet / income / cash flows) so
+    sources can deep-link to the EXACT statement page, not just the filing index. Returns a dict with
+    None for any statement whose report can't be identified."""
+    base, reports = _reports(cik, accession)
+    out = {"balance_sheet": None, "income": None, "cash_flow": None}
+    for name, fn in reports:
+        if "parenthetical" in name:
+            continue
+        url = f"{base}/{fn}"
+        if out["balance_sheet"] is None and ("balance sheet" in name or "financial position" in name):
+            out["balance_sheet"] = url
+        elif out["income"] is None and ("operations" in name or ("income" in name and "comprehensive" not in name)):
+            out["income"] = url
+        elif out["cash_flow"] is None and "cash flow" in name:
+            out["cash_flow"] = url
+    return out
+
+
 def extract_rows(url):
     """Return [(label, value_in_dollars)] for each balance-sheet row, plus the detected scale."""
     html = fe._get(url).decode("utf-8", "replace")
