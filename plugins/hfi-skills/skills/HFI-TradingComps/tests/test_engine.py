@@ -26,6 +26,7 @@ CASES = {
     "MSFT":  {"q_end": "2026-03-31", "fy_end": "2025-06-30"},
     "JPM":   {"q_end": "2026-03-31", "fy_end": "2025-12-31"},
     "BRK-B": {"q_end": "2026-03-31", "fy_end": "2025-12-31"},
+    "IBRX":  {"q_end": "2026-03-31", "fy_end": "2025-12-31"},  # broadened debt tags + custom-tag residual
 }
 
 # Exact expected values in raw dollars / share count. None = must resolve to missing.
@@ -50,6 +51,12 @@ EXPECT = {
         "shares": None, "minority": 2_269_000_000, "ltm_ebit": None,
         "current_assets": None, "working_capital": None,
     },
+    "IBRX": {  # broadened debt tags: SecuredLongTermDebt now captured (was missed -> $0); negative equity
+        "shares": 1_047_353_977, "lt_debt": 404_299_000, "finance_lease": 213_000,
+        "minority": 880_000, "current_assets": 452_953_000, "working_capital": 385_001_000,
+        "total_liabilities": 1_515_763_000, "stockholders_equity": -870_006_000,
+        "ltm_ebit": -261_389_000, "ltm_ebitda": -245_313_000, "ltm_ni": -854_636_000,
+    },
 }
 
 GETTERS = {
@@ -65,6 +72,8 @@ GETTERS = {
     "ltm_ebitda": lambda r: r["ltm_ebitda_derived"],
     "ltm_ni": lambda r: r["ltm"]["net_income"]["value"],
     "ltm_cfo": lambda r: r["ltm"]["cfo"]["value"],
+    "total_liabilities": lambda r: r["ev_line_items"]["total_liabilities"]["value"],
+    "stockholders_equity": lambda r: r["ev_line_items"]["stockholders_equity"]["value"],
 }
 
 

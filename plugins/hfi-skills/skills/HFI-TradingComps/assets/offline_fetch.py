@@ -141,7 +141,7 @@ def main(argv=None):
     ap.add_argument("ticker")
     ap.add_argument("cik")
     ap.add_argument("--concept-dir", default=None)
-    ap.add_argument("--out", default=os.path.join(HERE, "_cache"))
+    ap.add_argument("--out", default=fe.DEFAULT_CACHE)
     args = ap.parse_args(argv)
     cdir = args.concept_dir or os.path.join(args.out, f"concepts_{args.ticker.upper()}")
     if args.mode == "plan":

@@ -184,6 +184,13 @@ def compute_line_items(facts, q_end, fy_end, ticker=None, title=None, cik=None,
         "current_assets": resolve_instant(facts, "current_assets", q_end),
         "current_liabilities": resolve_instant(facts, "current_liabilities", q_end),
         "cash_and_equivalents": resolve_instant(facts, "cash_and_equivalents", q_end),
+        # for the liabilities-completeness reconciliation (catches debt under custom/related-party tags)
+        "total_liabilities": resolve_instant(facts, "total_liabilities", q_end),
+        "liabilities_noncurrent": resolve_instant(facts, "liabilities_noncurrent", q_end),
+        "operating_lease_noncurrent": resolve_instant(facts, "operating_lease_noncurrent_optional", q_end),
+        "deferred_tax_noncurrent": resolve_instant(facts, "deferred_tax_noncurrent", q_end),
+        "other_liabilities_noncurrent": resolve_instant(facts, "other_liabilities_noncurrent", q_end),
+        "stockholders_equity": resolve_instant(facts, "stockholders_equity", q_end),
     }
     ltm = {
         "revenue": compute_ltm(facts, "revenue", fy_end, q_end),
@@ -229,7 +236,7 @@ def build_line_items(ticker, cache_dir):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("tickers", nargs="+")
-    ap.add_argument("--out", default=os.path.join(HERE, "_cache"))
+    ap.add_argument("--out", default=fe.DEFAULT_CACHE)
     ap.add_argument("--full", action="store_true", help="include full citations")
     args = ap.parse_args(argv)
     res = []

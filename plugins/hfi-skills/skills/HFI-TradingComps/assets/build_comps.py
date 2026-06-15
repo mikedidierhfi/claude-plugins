@@ -36,10 +36,12 @@ def _safe_mult(num, den):
 
 
 def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=True,
-             consensus_mode="skip", shares_override=None, prices_override=None):
+             consensus_mode="skip", shares_override=None, prices_override=None,
+             debt_override=None):
     as_of = as_of or dt.date.today().isoformat()
     shares_override = {k.upper(): v for k, v in (shares_override or {}).items()}
     prices_override = {k.upper(): v for k, v in (prices_override or {}).items()}
+    debt_override = {k.upper(): v for k, v in (debt_override or {}).items()}
     cons = ci.load_consensus([t.upper() for t in tickers], consensus_path)
 
     companies = {}
@@ -93,7 +95,12 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
             stale_note("shares_outstanding", "Shares outstanding")
 
         lt_debt = val("long_term_debt_noncurrent")
-        if lt_debt is None:
+        if T in debt_override:
+            lt_debt = debt_override[T]
+            flags.append(f"Long-term debt set to supplied value ${lt_debt/1e6:,.0f}mm (verified from the "
+                         f"10-Q) — overrides the XBRL pull. Use this when debt is under custom/related-party "
+                         f"tags the companyfacts API can't see (e.g. the IBRX related-party notes).")
+        elif lt_debt is None:
             flags.append("Long-term debt not found via standard XBRL tags — verify against the 10-Q.")
             stale_note("long_term_debt_noncurrent", "Long-term debt")
         fin_lease = val("finance_lease_noncurrent")
@@ -114,6 +121,29 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         mi = minority or 0.0
         wcu = wc or 0.0
         tev = (market_equity + ltd + fl + mi - wcu) if market_equity is not None else None
+
+        # Liabilities-completeness reconciliation: flag material non-current liabilities NOT captured as
+        # debt/leases/deferred-tax/other — i.e. debt under a custom or related-party XBRL tag the
+        # companyfacts API doesn't expose (the IBRX case). Gated on materiality vs market cap so clean
+        # large-caps with big (properly-tagged) "other" non-current liabilities don't false-positive.
+        total_liab = val("total_liabilities")
+        liab_nc = val("liabilities_noncurrent")
+        nc_liab = liab_nc if liab_nc is not None else (
+            (total_liab - cl) if (total_liab is not None and cl is not None) else None)
+        if nc_liab is not None and T not in debt_override:
+            captured_nc = ltd + fl + (val("operating_lease_noncurrent") or 0.0) \
+                + (val("deferred_tax_noncurrent") or 0.0) + (val("other_liabilities_noncurrent") or 0.0)
+            residual = nc_liab - captured_nc
+            ref = market_equity if market_equity else (total_liab or nc_liab)
+            if residual > max(50_000_000.0, 0.05 * ref):
+                flags.insert(0, f"~${residual/1e6:,.0f}mm of non-current liabilities are NOT captured by "
+                                f"standard debt/lease tags — likely debt under a custom or related-party "
+                                f"XBRL tag the companyfacts API can't see. Long-term debt and TEV are probably "
+                                f"UNDERSTATED; read the 10-Q balance sheet and re-run with --debt \"{T}=<$mm>\".")
+        seq = val("stockholders_equity")
+        if seq is not None and seq < 0:
+            flags.append(f"Negative book equity (${seq/1e6:,.0f}mm) — book-insolvent; EV is entirely "
+                         f"market-cap-driven. Scrutinize the liability structure.")
 
         L = {k: li["ltm"][k]["value"] for k in li["ltm"]}
         ebit = L.get("operating_income_ebit")
@@ -192,7 +222,9 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("tickers", nargs="+")
-    ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "_cache"))
+    ap.add_argument("--out", default=cf.fe.DEFAULT_CACHE,
+                    help="cache dir for EDGAR JSON (defaults to a writable temp dir, so the skill runs "
+                         "in place even when its own folder is read-only)")
     ap.add_argument("--consensus", help="path to consensus JSON (NTM)")
     ap.add_argument("--consensus-mode", default="skip",
                     choices=["capiq_excel", "manual", "skip"],
@@ -204,6 +236,8 @@ def main(argv=None):
                     'e.g. "OWL=675802413,ARES=222028421" (Class A from the 10-Q cover)')
     ap.add_argument("--prices", help='supply prices (for no-egress runs, or to pin a price), '
                     'e.g. "AAPL=307.34,MSFT=416.67"')
+    ap.add_argument("--debt", help='override long-term debt IN $MM when it is under custom/related-party '
+                    'tags the XBRL pull misses (verify in the 10-Q first), e.g. "IBRX=1082.685"')
     ap.add_argument("--json", action="store_true", help="print the assembled structure as JSON")
     args = ap.parse_args(argv)
 
@@ -217,10 +251,11 @@ def main(argv=None):
 
     overrides = _parse_kv(args.shares)
     price_overrides = _parse_kv(args.prices)
+    debt_overrides = {k: v * 1_000_000.0 for k, v in _parse_kv(args.debt).items()}  # --debt is in $mm
 
     comps = assemble(args.tickers, args.out, consensus_path=args.consensus,
                      consensus_mode=args.consensus_mode, shares_override=overrides,
-                     prices_override=price_overrides)
+                     prices_override=price_overrides, debt_override=debt_overrides)
 
     for e in comps.get("errors", []):
         print(f"  DROPPED {e['ticker']}: {e['error']}")

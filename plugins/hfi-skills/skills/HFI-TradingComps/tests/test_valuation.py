@@ -20,7 +20,7 @@ import market_price as mp
 def li(ticker, shares=1_000_000_000, lt_debt=10_000_000_000, lease=1_000_000_000,
        minority=500_000_000, ca=8_000_000_000, cl=5_000_000_000, cash=2_000_000_000,
        rev=20_000_000_000, ebit=4_000_000_000, da=1_000_000_000, ni=2_000_000_000,
-       cfo=3_000_000_000):
+       cfo=3_000_000_000, total_liab=None, op_lease=0, def_tax=0, other_liab=0, equity=None):
     def inst(v):
         return {"value": v, "citation": "test"}
     wc = (ca - cl) if (ca is not None and cl is not None) else None
@@ -34,6 +34,9 @@ def li(ticker, shares=1_000_000_000, lt_debt=10_000_000_000, lease=1_000_000_000
             "finance_lease_noncurrent": inst(lease), "minority_interest": inst(minority),
             "current_assets": inst(ca), "current_liabilities": inst(cl),
             "cash_and_equivalents": inst(cash),
+            "total_liabilities": inst(total_liab), "liabilities_noncurrent": inst(None),
+            "operating_lease_noncurrent": inst(op_lease), "deferred_tax_noncurrent": inst(def_tax),
+            "other_liabilities_noncurrent": inst(other_liab), "stockholders_equity": inst(equity),
         },
         "working_capital": wc,
         "ltm": {"revenue": inst(rev), "operating_income_ebit": inst(ebit),
@@ -46,8 +49,12 @@ FIX = {
     "OPER": li("OPER"),                                              # clean operating co
     "LOSS": li("LOSS", ebit=-1_000_000_000, da=200_000_000, ni=-500_000_000),  # loss-maker
     "FIN":  li("FIN", ca=None, cl=None, ebit=None, da=None, minority=None, lt_debt=None),  # financial
+    # IBRX-like: standard tags capture $0 debt, but total liabilities reveal ~$4.9bn of non-current
+    # liabilities (debt under a custom/related-party tag) -> reconciliation flag must fire.
+    "HIDDENDEBT": li("HIDDENDEBT", lt_debt=0, lease=0, minority=0, ca=1_000_000_000,
+                     cl=100_000_000, total_liab=5_000_000_000, equity=-1_000_000_000),
 }
-PRICE = {"OPER": 50.0, "LOSS": 50.0, "FIN": 50.0}
+PRICE = {"OPER": 50.0, "LOSS": 50.0, "FIN": 50.0, "HIDDENDEBT": 50.0}
 
 def _resolve(t, cache=None):
     if t.upper() == "BADTKR":
@@ -109,6 +116,17 @@ def run():
     ck("bad ticker dropped from tickers", comps["tickers"] == ["OPER"])
     ck("good ticker still built", "OPER" in comps["companies"])
     ck("bad ticker recorded in errors", any(e["ticker"] == "BADTKR" for e in comps["errors"]))
+
+    # --- liabilities-completeness: uncaptured non-current liabilities (custom-tag debt) -> flag ---
+    c = bc.assemble(["HIDDENDEBT"], "")["companies"]["HIDDENDEBT"]
+    ck("reconciliation flag fires on hidden debt", any("NOT captured by" in f for f in c["flags"]))
+    ck("negative book equity flagged", any("Negative book equity" in f for f in c["flags"]))
+
+    # --- --debt override: injects verified debt, suppresses the reconciliation nag, lifts TEV ---
+    c = bc.assemble(["HIDDENDEBT"], "", debt_override={"HIDDENDEBT": 1_000_000_000})["companies"]["HIDDENDEBT"]
+    ck("debt override flagged", any("set to supplied value" in f for f in c["flags"]))
+    ck("debt override suppresses reconciliation", not any("NOT captured by" in f for f in c["flags"]))
+    ck("debt override flows into TEV (50,100mm)", approx(c["tev_mm"], 50100.0))
 
     print("-" * 60)
     print(f"{n[0] - len(fails)}/{n[0]} passed" + ("" if not fails else f", {len(fails)} FAILED"))

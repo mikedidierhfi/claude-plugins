@@ -9,11 +9,49 @@
     ]
   },
   "long_term_debt_noncurrent": {
+    "_note": "Totals first (used when present); then specific debt concepts for filers that only tag components (e.g. SecuredLongTermDebt caught $404mm of IBRX's debt the original 3-tag list missed). Custom/related-party tags under a company's own namespace are invisible to companyfacts — the liabilities reconciliation flag catches those residuals.",
     "kind": "instant", "unit": "USD",
     "tags": [
       {"taxonomy": "us-gaap", "tag": "LongTermDebtNoncurrent"},
       {"taxonomy": "us-gaap", "tag": "LongTermDebtAndCapitalLeaseObligations"},
-      {"taxonomy": "us-gaap", "tag": "LongTermDebt"}
+      {"taxonomy": "us-gaap", "tag": "LongTermDebt"},
+      {"taxonomy": "us-gaap", "tag": "SecuredLongTermDebt"},
+      {"taxonomy": "us-gaap", "tag": "ConvertibleDebtNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "ConvertibleLongTermNotesPayable"},
+      {"taxonomy": "us-gaap", "tag": "NotesPayableRelatedPartiesNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "DueToRelatedPartiesNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "LongTermNotesPayable"},
+      {"taxonomy": "us-gaap", "tag": "SeniorLongTermNotes"},
+      {"taxonomy": "us-gaap", "tag": "UnsecuredLongTermDebt"},
+      {"taxonomy": "us-gaap", "tag": "LongTermLoansPayable"},
+      {"taxonomy": "us-gaap", "tag": "OtherLongTermDebtNoncurrent"}
+    ]
+  },
+  "total_liabilities": {
+    "kind": "instant", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "Liabilities"}]
+  },
+  "liabilities_noncurrent": {
+    "kind": "instant", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "LiabilitiesNoncurrent"}]
+  },
+  "deferred_tax_noncurrent": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "DeferredIncomeTaxLiabilitiesNet"},
+      {"taxonomy": "us-gaap", "tag": "DeferredTaxLiabilitiesNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "DeferredTaxLiabilities"}
+    ]
+  },
+  "other_liabilities_noncurrent": {
+    "kind": "instant", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "OtherLiabilitiesNoncurrent"}]
+  },
+  "stockholders_equity": {
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "StockholdersEquity"},
+      {"taxonomy": "us-gaap", "tag": "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"}
     ]
   },
   "finance_lease_noncurrent": {

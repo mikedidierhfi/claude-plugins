@@ -1,6 +1,6 @@
 {
   "name": "hfi-skills",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "HFI's own Claude skills for investment work — from deal-pipeline tasks to standalone market analysis. Ask in plain English and the right skill runs, e.g. 'brief me on [deal] before my call' or 'build a trading-comps workbook for AAPL, MSFT, GOOGL.' Pipeline-aware skills pair with the hfi-deals plugin; others (like trading comps) work from primary sources such as SEC filings.",
   "author": {
     "name": "HFI Capital Management"

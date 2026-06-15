@@ -30,7 +30,7 @@ def main():
     # SEC EDGAR reachability — soft (uses the skill's real fetch path; cache-aware, so fast)
     try:
         import fetch_edgar as fe
-        m = fe.load_ticker_map(os.path.join(HERE, "_cache"))
+        m = fe.load_ticker_map(fe.DEFAULT_CACHE)
         ok = "AAPL" in m
         results.append(("SEC EDGAR reachable (soft)", ok, False, f"{len(m):,} tickers resolved"))
     except Exception as e:

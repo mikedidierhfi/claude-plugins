@@ -11,6 +11,20 @@ the target; otherwise it skips the tag and, if nothing fresh exists, returns *mi
 `stale_only` diagnostic. **Never** report a multi-year-old figure. If a needed item comes back
 missing, get it from the actual filing/cover page — don't reach for the stale series.
 
+## 1a. Debt under non-standard / custom XBRL tags — the silent understatement (IBRX case)
+companyfacts exposes only standard `us-gaap`/`dei` concepts. A heavily-financed name can carry large
+debt the original 3-tag list missed: ImmunityBio (IBRX) had **$404mm under `SecuredLongTermDebt`** (a
+standard tag, now added) **plus $678mm of related-party convertible notes under a custom `ibrx_`
+namespace the API can't see at all** — the engine returned **$0**, understating TEV ~15%.
+→ **Two-part fix:** (1) the long-term-debt tag list is broadened (secured / convertible / related-party
+/ notes concepts). (2) A **liabilities-completeness reconciliation** compares total liabilities to what
+was captured (debt + leases + deferred tax + other); a large unexplained non-current residual — gated
+on materiality vs market cap so clean large-caps don't false-positive — raises a flag: *"~$Xmm of
+non-current liabilities NOT captured … read the 10-Q, re-run with --debt."* When you've verified the
+true figure from the balance sheet, inject it: `build_comps.py IBRX --debt "IBRX=1082.685"` (in $mm),
+which also suppresses the flag. Watch the **negative book equity** flag too (book-insolvent → EV is
+purely market-cap-driven; scrutinize liabilities).
+
 ## 2. Financials & alternative asset managers don't fit this methodology
 Banks, insurers, and **alternative asset managers** (BX, KKR, ARES, OWL, APO, CG, TPG, …) use an
 **unclassified balance sheet** (no current assets/liabilities → no working capital) and don't report

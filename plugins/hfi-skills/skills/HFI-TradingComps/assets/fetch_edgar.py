@@ -15,12 +15,15 @@ Usage:
 
 Caches the big companyfacts/submissions JSON to --out so downstream parsers reuse them.
 """
-import argparse, json, os, sys, time, urllib.request, urllib.error
+import argparse, json, os, sys, tempfile, time, urllib.request, urllib.error
 
 SEC_UA = os.environ.get(
     "SEC_UA",
     "HFI-TradingComps skill (SEC EDGAR fair access; set SEC_UA env var to your name+email)",
 )
+# Default cache dir = a WRITABLE temp dir (not the skill's own folder, which is read-only when the
+# skill is mounted from a plugin/marketplace). Lets the skill run in place without being copied out.
+DEFAULT_CACHE = os.environ.get("HFI_TC_CACHE", os.path.join(tempfile.gettempdir(), "hfi-tradingcomps-cache"))
 TICKER_MAP_URL = "https://www.sec.gov/files/company_tickers.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik10}.json"
 COMPANYFACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik10}.json"
@@ -165,8 +168,7 @@ def fetch_ticker(ticker, cache_dir):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Fetch SEC EDGAR primary data for tickers.")
     ap.add_argument("tickers", nargs="+", help="Ticker symbols, e.g. AAPL MSFT")
-    ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "_cache"),
-                    help="Cache directory for downloaded JSON")
+    ap.add_argument("--out", default=DEFAULT_CACHE, help="Cache directory for downloaded JSON")
     ap.add_argument("--summary", action="store_true", help="Print summary JSON (default true)")
     args = ap.parse_args(argv)
 
