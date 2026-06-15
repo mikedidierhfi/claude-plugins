@@ -66,6 +66,29 @@ def get_price_yahoo(ticker):
     return {"ticker": ticker.upper(), "price": None, "error": f"yahoo failed: {last_err}"}
 
 
+def get_price_cnbc(ticker):
+    """Second, INDEPENDENT provider (different infra than Yahoo) — keyless JSON quote service."""
+    sym = ticker.upper().strip().replace("-", ".")  # CNBC uses dotted class tickers (BRK.B)
+    url = (f"https://quote.cnbc.com/quote-html-webservice/quote.htm?symbols={sym}"
+           f"&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=0&output=json")
+    d = json.loads(_get(url))
+    qq = ((d.get("QuickQuoteResult") or {}).get("QuickQuote")) or []
+    if isinstance(qq, dict):
+        qq = [qq]
+    if not qq:
+        return {"ticker": ticker.upper(), "price": None, "error": "cnbc no quote"}
+    q = qq[0]
+    last = q.get("last") or q.get("previous_day_closing")
+    try:
+        price = float(str(last).replace(",", ""))
+    except (TypeError, ValueError):
+        return {"ticker": ticker.upper(), "price": None, "error": f"cnbc parse {last!r}"}
+    return {"ticker": ticker.upper(), "price": price,
+            "as_of": q.get("last_time") or q.get("last_timedate"),
+            "currency": q.get("currencyCode"),
+            "source": "CNBC quote API (keyless)", "source_url": url}
+
+
 def get_price_stooq(ticker):
     url = f"https://stooq.com/q/l/?s={ticker.lower().strip()}.us&f=sd2t2ohlcv&h&e=csv"
     text = _get(url)
@@ -83,19 +106,25 @@ def get_price_stooq(ticker):
 
 
 def get_price(ticker):
+    """Resilient price: try independent keyless providers in order (Yahoo -> CNBC -> stooq) so a single
+    provider outage or bot-wall doesn't blank the run. Returns fallback_needed only if ALL fail."""
     r = get_price_yahoo(ticker)
     if r.get("price") is not None:
         return r
-    try:
-        s = get_price_stooq(ticker)
-        if s.get("price") is not None:
-            return s
-    except Exception:
-        pass
-    return {"ticker": ticker.upper(), "price": None, "error": r.get("error"),
+    errs = [f"yahoo: {r.get('error')}"]
+    for fn in (get_price_cnbc, get_price_stooq):
+        try:
+            s = fn(ticker)
+            if s.get("price") is not None:
+                return s
+            errs.append(f"{fn.__name__.replace('get_price_','')}: {s.get('error')}")
+        except Exception as e:
+            errs.append(f"{fn.__name__.replace('get_price_','')}: {e!r}")
+    return {"ticker": ticker.upper(), "price": None, "error": "; ".join(errs),
             "fallback_needed": True,
-            "fallback_hint": "Use Chrome to read the last close from finance.yahoo.com/quote/<TICKER> "
-                             "or google.com/finance, or ask the user to paste the price."}
+            "fallback_hint": "All keyless sources failed. Use Chrome to read the last close from "
+                             "finance.yahoo.com/quote/<TICKER> or google.com/finance, or ask the user "
+                             "to paste the price (then pass --prices \"<TKR>=<px>\")."}
 
 
 def main(argv=None):

@@ -172,6 +172,20 @@ def compute_ltm(facts, item_key, fy_end, q_end):
     return {"value": None, "components": {}, "missing": True}
 
 
+def detect_share_classes(facts, q_end):
+    """Count DISTINCT share-count values reported at the most recent cover-page date. >1 means a
+    multi-class issuer (e.g. GOOG/GOOGL, BRK) whose cover lists each class separately — resolve_instant
+    picks ONE, so the single XBRL share count understates total shares unless --shares is supplied."""
+    recs = (concept_records(facts, "dei", "EntityCommonStockSharesOutstanding")
+            or concept_records(facts, "us-gaap", "CommonStockSharesOutstanding"))
+    ends = [r["end"] for r in recs if r.get("end") and r.get("val") is not None]
+    if not ends:
+        return 0
+    latest = max(ends)
+    vals = {r["val"] for r in recs if r.get("end") == latest and r.get("val") is not None}
+    return len(vals)
+
+
 def compute_line_items(facts, q_end, fy_end, ticker=None, title=None, cik=None,
                        fiscal_year_end=None, q_meta=None, k_meta=None):
     """Pure computation: given XBRL `facts` and the latest 10-Q/10-K period-ends, return all EV
@@ -181,6 +195,12 @@ def compute_line_items(facts, q_end, fy_end, ticker=None, title=None, cik=None,
         "long_term_debt_noncurrent": resolve_instant(facts, "long_term_debt_noncurrent", q_end),
         "finance_lease_noncurrent": resolve_instant(facts, "finance_lease_noncurrent", q_end),
         "minority_interest": resolve_instant(facts, "minority_interest", q_end),
+        # mezzanine (redeemable) NCI is a separate balance-sheet section — summed with minority_interest
+        "redeemable_minority_interest": resolve_instant(facts, "redeemable_minority_interest", q_end),
+        # preferred stock: a claim senior to common, added to EV (carrying value; par may understate -> flagged)
+        "preferred_equity": resolve_instant(facts, "preferred_equity", q_end),
+        # long-term investments NOT netted by the house WC definition — captured only to flag if material
+        "noncurrent_investments": resolve_instant(facts, "noncurrent_investments", q_end),
         "current_assets": resolve_instant(facts, "current_assets", q_end),
         "current_liabilities": resolve_instant(facts, "current_liabilities", q_end),
         "cash_and_equivalents": resolve_instant(facts, "cash_and_equivalents", q_end),
@@ -218,6 +238,7 @@ def compute_line_items(facts, q_end, fy_end, ticker=None, title=None, cik=None,
         "working_capital": wc,
         "ltm": ltm,
         "ltm_ebitda_derived": ltm_ebitda,
+        "share_classes_detected": detect_share_classes(facts, q_end),
     }
 
 

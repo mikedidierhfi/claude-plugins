@@ -154,6 +154,7 @@ def render(comps, path):
     emit_input("ltdebt", "(+) Long-term debt", lambda co: co["lt_debt_mm"])
     emit_input("lease", "(+) Finance / capital lease obligations", lambda co: co["finance_lease_mm"])
     emit_input("minority", "(+) Minority / noncontrolling interest", lambda co: co["minority_mm"])
+    emit_input("preferred", "(+) Preferred equity", lambda co: co.get("preferred_mm"))
     # Working capital is shown as the main (–) line with current assets/liabs as indented sub-rows
     # beneath it, so reserve its row first, emit the sub-rows, then fill the WC formula.
     R["wc"] = state["r"]
@@ -168,7 +169,8 @@ def render(comps, path):
              fmt=FMT_MM, align="right")
     emit_formula("tev", "Total Enterprise Value (TEV)",
                  lambda c: f'=IF(ISNUMBER({c}{R["mkteq"]}),{c}{R["mkteq"]}+N({c}{R["ltdebt"]})+'
-                           f'N({c}{R["lease"]})+N({c}{R["minority"]})-N({c}{R["wc"]}),"")',
+                           f'N({c}{R["lease"]})+N({c}{R["minority"]})+N({c}{R["preferred"]})-'
+                           f'N({c}{R["wc"]}),"")',
                  bold=True, total=True)
     emit_input("cash", "(memo) Cash & equivalents", lambda co: co["cash_mm"])
 
@@ -205,6 +207,29 @@ def render(comps, path):
     blank()
     emit_mult("pe_ltm", "(memo) P/E — LTM (mkt equity / NI)", "mkteq", "ni")
 
+    # ---------- Peer summary statistics ----------
+    # Min / Mean / Median / Max of each multiple ACROSS the peer set, as columns to the right of the
+    # ticker columns (standard comp-sheet layout). Live formulas; Excel's COUNT/MEDIAN/MIN/MAX/AVERAGE
+    # ignore text ("nm") and blanks, so non-meaningful or missing multiples drop out of the peer stats.
+    n = len(tickers)
+    if n >= 2:
+        first_c, last_c = col(0), col(n - 1)
+        stat_cols = [("Min", "MIN"), ("Mean", "AVERAGE"), ("Median", "MEDIAN"), ("Max", "MAX")]
+        for j, (label, _) in enumerate(stat_cols):
+            cidx = 2 + n + j
+            cell(hdr_row, cidx, label, bold=True, color="FFFFFF", fill=GOLD, align="center", size=11)
+            ws.column_dimensions[get_column_letter(cidx)].width = 11
+        for key in ("m_ev_ebitda_ltm", "m_ev_ebit_ltm", "m_ev_cfo_ltm", "m_ev_ni_ltm",
+                    "m_ev_ebitda_ntm", "m_ev_ebit_ntm", "m_ev_cfo_ntm", "m_ev_ni_ntm", "pe_ltm"):
+            r = R.get(key)
+            if not r:
+                continue
+            rng = f"{first_c}{r}:{last_c}{r}"
+            for j, (label, fn) in enumerate(stat_cols):
+                cell(r, 2 + n + j, f'=IF(COUNT({rng})=0,"",{fn}({rng}))',
+                     fmt=FMT_X, align="right", fill=GREY, size=10,
+                     bold=(key == "m_ev_ebitda_ltm"))
+
     # ---------- Legend + footnotes ----------
     blank()
     cell(state["r"], 1, 'Legend:  "nm" = not meaningful (denominator ≤ 0).  Blank = not available / '
@@ -217,10 +242,14 @@ def render(comps, path):
     state["r"] += 1
     notes = [
         "Methodology: TEV = market equity value + long-term debt + finance/capital lease obligations "
-        "+ minority interest − working capital (= total current assets − total current liabilities, "
-        "most recent 10-Q). Only long-term debt and non-current finance leases are added; current "
+        "+ preferred equity + minority interest − working capital (= total current assets − total "
+        "current liabilities, most recent 10-Q). Minority interest sums equity-section and redeemable "
+        "(mezzanine) NCI; preferred is added at carrying value (par may understate liquidation value — "
+        "see name footnotes). Only long-term debt and non-current finance leases are added; current "
         "portions sit in current liabilities and are netted via working capital (no double count). "
         "House definition — differs from textbook EV (which subtracts cash only).",
+        "Summary columns (Min / Mean / Median / Max, right of the peer columns) are live formulas over "
+        "each multiple row; \"nm\" and blank cells are automatically excluded from the peer statistics.",
         "Market equity value = shares outstanding (most recent 10-Q cover) × latest stock price. "
         "Derived cells (market equity, working capital, TEV, EBITDA, all multiples) are LIVE EXCEL "
         "FORMULAS referencing the input rows above — change an input and everything recomputes.",

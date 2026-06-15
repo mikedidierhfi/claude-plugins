@@ -5,11 +5,16 @@ Assemble TEV per the house definition (see [core/ev_methodology.md](../core/ev_m
 
 ```
 Market equity value = shares (10-Q) × price
-TEV = market equity + long-term debt + finance leases + minority interest − working capital
+TEV = market equity + long-term debt + finance leases + minority interest + preferred − working capital
 working capital = total current assets − total current liabilities
 ```
-- Missing add-backs (lease/minority) are treated as $0 **and flagged** — confirm that's right (most
-  issuers genuinely have none).
+- Minority interest sums equity-section NCI + redeemable (mezzanine) NCI. Preferred equity is added
+  at carrying value ($0 for most issuers; par-value capture is flagged to verify liquidation value).
+- Missing add-backs (lease/minority/preferred) are treated as $0 **and flagged** — confirm that's
+  right (most issuers genuinely have none).
+- Other auto-flags to act on: multiple share classes detected (supply total via `--shares`), non-USD/
+  ADR financials (currency mismatch vs price), material long-term investments not netted (your call),
+  and EBITDA period-basis mismatch (D&A not on an LTM basis).
 - Missing working capital (financials) → omitted **and flagged** → reconsider including the name.
 - **Debt completeness (any filer):** the XBRL pull can miss debt under custom/related-party tags. The
   engine reconciles total liabilities vs what it captured and, if a material gap remains, **reads the

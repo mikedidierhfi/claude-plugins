@@ -20,9 +20,14 @@ import market_price as mp
 def li(ticker, shares=1_000_000_000, lt_debt=10_000_000_000, lease=1_000_000_000,
        minority=500_000_000, ca=8_000_000_000, cl=5_000_000_000, cash=2_000_000_000,
        rev=20_000_000_000, ebit=4_000_000_000, da=1_000_000_000, ni=2_000_000_000,
-       cfo=3_000_000_000, total_liab=None, op_lease=0, def_tax=0, other_liab=0, equity=None):
+       cfo=3_000_000_000, total_liab=None, op_lease=0, def_tax=0, other_liab=0, equity=None,
+       redeem_nci=None, preferred=None, nc_inv=None, share_classes=1,
+       ebit_method="FY + YTD - priorYTD", da_method="FY + YTD - priorYTD"):
     def inst(v):
         return {"value": v, "citation": "test"}
+
+    def flow(v, method):
+        return {"value": v, "citation": "test", "method": method}
     wc = (ca - cl) if (ca is not None and cl is not None) else None
     ebitda = (ebit + da) if (ebit is not None and da is not None) else None
     return {
@@ -32,6 +37,8 @@ def li(ticker, shares=1_000_000_000, lt_debt=10_000_000_000, lease=1_000_000_000
         "ev_line_items": {
             "shares_outstanding": inst(shares), "long_term_debt_noncurrent": inst(lt_debt),
             "finance_lease_noncurrent": inst(lease), "minority_interest": inst(minority),
+            "redeemable_minority_interest": inst(redeem_nci),
+            "preferred_equity": inst(preferred), "noncurrent_investments": inst(nc_inv),
             "current_assets": inst(ca), "current_liabilities": inst(cl),
             "cash_and_equivalents": inst(cash),
             "total_liabilities": inst(total_liab), "liabilities_noncurrent": inst(None),
@@ -39,9 +46,11 @@ def li(ticker, shares=1_000_000_000, lt_debt=10_000_000_000, lease=1_000_000_000
             "other_liabilities_noncurrent": inst(other_liab), "stockholders_equity": inst(equity),
         },
         "working_capital": wc,
-        "ltm": {"revenue": inst(rev), "operating_income_ebit": inst(ebit),
-                "depreciation_amortization": inst(da), "net_income": inst(ni), "cfo": inst(cfo)},
+        "ltm": {"revenue": flow(rev, ebit_method), "operating_income_ebit": flow(ebit, ebit_method),
+                "depreciation_amortization": flow(da, da_method), "net_income": flow(ni, ebit_method),
+                "cfo": flow(cfo, ebit_method)},
         "ltm_ebitda_derived": ebitda,
+        "share_classes_detected": share_classes,
     }
 
 # Per-ticker synthetic fixtures
@@ -53,6 +62,14 @@ FIX = {
     # liabilities (debt under a custom/related-party tag) -> reconciliation flag must fire.
     "HIDDENDEBT": li("HIDDENDEBT", lt_debt=0, lease=0, minority=0, ca=1_000_000_000,
                      cl=100_000_000, total_liab=5_000_000_000, equity=-1_000_000_000),
+    # preferred + redeemable (mezzanine) NCI both present -> summed into the bridge
+    "PREF": li("PREF", minority=500_000_000, redeem_nci=300_000_000, preferred=400_000_000),
+    # D&A degraded to FY-only while EBIT is true LTM -> EBITDA basis-mismatch flag
+    "MISMATCH": li("MISMATCH", da_method="FY only (YTD/prior incomplete)"),
+    # multiple share classes detected -> understated-shares flag
+    "MULTI": li("MULTI", share_classes=2),
+    # large non-operating long-term investment portfolio -> materiality flag (NOT netted)
+    "BIGINV": li("BIGINV", nc_inv=30_000_000_000),
 }
 PRICE = {"OPER": 50.0, "LOSS": 50.0, "FIN": 50.0, "HIDDENDEBT": 50.0}
 
@@ -64,12 +81,12 @@ def _resolve(t, cache=None):
 
 cf.build_line_items = lambda t, cache: FIX[t]
 cf.fe.resolve_cik = _resolve
-mp.get_price = lambda t: {"price": PRICE[t], "as_of": "2026-06-05", "source": "test", "source_url": "u"}
+mp.get_price = lambda t: {"price": PRICE.get(t, 50.0), "as_of": "2026-06-05", "source": "test", "source_url": "u"}
 # Stub the 10-Q balance-sheet reader (offline + deterministic) so the reconciliation flag's
 # primary-source verification step is exercised without network.
-bc.vf.verify_liabilities = lambda cik, acc: {
+bc.vf.verify_liabilities = lambda cik, acc, xbrl_total_liabilities=None: {
     "debt_like_rows": [("Related-party convertible note payable", 4_800_000_000.0)],
-    "total_liabilities": 5_000_000_000.0, "url": "u", "scale": 1000}
+    "total_liabilities": 5_000_000_000.0, "url": "u", "scale": 1000, "scale_note": None}
 
 
 def approx(a, b, tol=1e-6):
@@ -134,6 +151,38 @@ def run():
     ck("debt override flagged", any("set to supplied value" in f for f in c["flags"]))
     ck("debt override suppresses reconciliation", not any("NOT captured by" in f for f in c["flags"]))
     ck("debt override flows into TEV (50,100mm)", approx(c["tev_mm"], 50100.0))
+
+    # --- preferred + redeemable (mezzanine) NCI summed into the EV bridge ---
+    c = bc.assemble(["PREF"], "")["companies"]["PREF"]
+    ck("PREF minority summed (500+300=800)", approx(c["minority_mm"], 800.0))
+    ck("PREF preferred captured (400)", approx(c["preferred_mm"], 400.0))
+    ck("PREF TEV incl pref+redeem (59,200)", approx(c["tev_mm"], 59200.0))  # 50000+10000+1000+800+400-3000
+    ck("PREF redeemable-NCI flag", any("Redeemable (mezzanine) NCI" in f for f in c["flags"]))
+    ck("PREF preferred flag", any("Preferred equity" in f for f in c["flags"]))
+
+    # --- a clean company must NOT spuriously gain the new flags ---
+    c = bc.assemble(["OPER"], "")["companies"]["OPER"]
+    ck("OPER no preferred flag", not any("Preferred equity" in f for f in c["flags"]))
+    ck("OPER no redeemable-NCI flag", not any("Redeemable (mezzanine)" in f for f in c["flags"]))
+    ck("OPER no mismatch flag", not any("basis mismatch" in f for f in c["flags"]))
+    ck("OPER no multi-class flag", not any("Multiple share classes" in f for f in c["flags"]))
+    ck("OPER preferred_mm None", c.get("preferred_mm") is None)
+
+    # --- EBITDA period-basis mismatch (EBIT true-LTM, D&A FY-only) is flagged ---
+    c = bc.assemble(["MISMATCH"], "")["companies"]["MISMATCH"]
+    ck("EBITDA basis mismatch flagged", any("basis mismatch" in f for f in c["flags"]))
+
+    # --- multiple share classes detected -> understated-shares flag ---
+    c = bc.assemble(["MULTI"], "")["companies"]["MULTI"]
+    ck("multi-class flag fires", any("Multiple share classes detected" in f for f in c["flags"]))
+    c = bc.assemble(["MULTI"], "", shares_override={"MULTI": 2_000_000_000})["companies"]["MULTI"]
+    ck("multi-class flag suppressed when --shares supplied",
+       not any("Multiple share classes detected" in f for f in c["flags"]))
+
+    # --- material long-term investments flagged but NOT netted from EV ---
+    c = bc.assemble(["BIGINV"], "")["companies"]["BIGINV"]
+    ck("LT-investments materiality flag", any("Long-term investments" in f for f in c["flags"]))
+    ck("LT-investments NOT netted (TEV unchanged 58,500)", approx(c["tev_mm"], 58500.0))
 
     print("-" * 60)
     print(f"{n[0] - len(fails)}/{n[0]} passed" + ("" if not fails else f", {len(fails)} FAILED"))

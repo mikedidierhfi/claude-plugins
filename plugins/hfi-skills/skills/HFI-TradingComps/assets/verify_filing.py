@@ -70,7 +70,7 @@ def extract_rows(url):
     return rows, scale
 
 
-def verify_liabilities(cik, accession):
+def verify_liabilities(cik, accession, xbrl_total_liabilities=None):
     url = find_balance_sheet(cik, accession)
     if not url:
         return {"url": None, "error": "balance-sheet statement not found in FilingSummary"}
@@ -85,8 +85,27 @@ def verify_liabilities(cik, accession):
     liab_rows = rows[start:]
     total_liab = next((v for (l, v) in liab_rows if re.fullmatch(r"total liabilities", l.strip(), re.I)), None)
     debt_rows = [(l, v) for (l, v) in liab_rows if DEBT_RE.search(l) and not NONDEBT_RE.search(l)]
+
+    # Scale cross-check (guards the 1000x risk): the statement scale is GUESSED from "in thousands/
+    # millions" header text; if that guess is wrong, every suggested figure is 1000x off. Reconcile the
+    # statement's "Total liabilities" against the XBRL total (already in $) and auto-correct on a ~1000x
+    # mismatch, or warn if the two don't reconcile at all.
+    scale_note = None
+    if xbrl_total_liabilities and total_liab and total_liab > 0:
+        ratio = xbrl_total_liabilities / total_liab
+        factor = 1000.0 if 200 < ratio < 5000 else (0.001 if 0.0002 < ratio < 0.005 else None)
+        if factor:
+            total_liab *= factor
+            debt_rows = [(l, v * factor) for (l, v) in debt_rows]
+            scale *= factor
+            scale_note = (f"statement scale auto-corrected x{factor:g} to reconcile to the XBRL total "
+                          f"liabilities of ${xbrl_total_liabilities/1e6:,.0f}mm")
+        elif not (0.5 <= ratio <= 2.0):
+            scale_note = (f"WARNING: statement total liabilities ${total_liab/1e6:,.0f}mm does not "
+                          f"reconcile to the XBRL total ${xbrl_total_liabilities/1e6:,.0f}mm — verify "
+                          f"scale/units manually before trusting the suggested debt figure.")
     return {"url": url, "scale": scale, "total_liabilities": total_liab,
-            "debt_like_rows": debt_rows, "all_rows": rows}
+            "debt_like_rows": debt_rows, "all_rows": rows, "scale_note": scale_note}
 
 
 def main(argv=None):

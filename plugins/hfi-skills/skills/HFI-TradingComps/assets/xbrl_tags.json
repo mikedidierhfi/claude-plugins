@@ -71,9 +71,33 @@
   },
   "minority_interest": {
     "kind": "instant", "unit": "USD",
+    "tags": [{"taxonomy": "us-gaap", "tag": "MinorityInterest"}]
+  },
+  "redeemable_minority_interest": {
+    "_note": "Mezzanine (redeemable) NCI — a separate balance-sheet section from equity-section NCI. Summed with minority_interest so a name carrying both isn't under-captured.",
+    "kind": "instant", "unit": "USD",
     "tags": [
-      {"taxonomy": "us-gaap", "tag": "MinorityInterest"},
-      {"taxonomy": "us-gaap", "tag": "RedeemableNoncontrollingInterestEquityCarryingAmount"}
+      {"taxonomy": "us-gaap", "tag": "RedeemableNoncontrollingInterestEquityCarryingAmount"},
+      {"taxonomy": "us-gaap", "tag": "RedeemableNoncontrollingInterestEquityFairValue"}
+    ]
+  },
+  "preferred_equity": {
+    "_note": "Preferred stock is a claim senior to common, added to EV like minority interest. Redeemable/mezzanine preferred (TemporaryEquity / RedeemablePreferred) is at carrying value (meaningful); permanent PreferredStockValue is par (may understate liquidation value -> flagged). $0 for the vast majority of issuers.",
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "RedeemablePreferredStockCarryingAmount"},
+      {"taxonomy": "us-gaap", "tag": "TemporaryEquityCarryingAmountAttributableToParent"},
+      {"taxonomy": "us-gaap", "tag": "PreferredStockValue"}
+    ]
+  },
+  "noncurrent_investments": {
+    "_note": "Long-term investments / marketable securities NOT netted by the house working-capital definition. Used only to FLAG when material (the house def intentionally nets current working capital only).",
+    "kind": "instant", "unit": "USD",
+    "tags": [
+      {"taxonomy": "us-gaap", "tag": "LongTermInvestments"},
+      {"taxonomy": "us-gaap", "tag": "MarketableSecuritiesNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "AvailableForSaleSecuritiesNoncurrent"},
+      {"taxonomy": "us-gaap", "tag": "OtherLongTermInvestments"}
     ]
   },
   "current_assets": {

@@ -27,7 +27,8 @@ A single Excel workbook ("Trading Statistics") with:
    outstanding and price up to **Total Enterprise Value (TEV)**, then the denominators
    (EBITDA, EBIT, CFO, Net Income) on an **LTM** basis and an **NTM (Next 12 Months)** basis.
 2. **Valuation section** — trading multiples labeled down the left, one column per ticker:
-   TEV/EBITDA, TEV/EBIT, TEV/CFO, TEV/Net Income — both LTM and NTM.
+   TEV/EBITDA, TEV/EBIT, TEV/CFO, TEV/Net Income — both LTM and NTM — plus **peer summary
+   statistics** (Min / Mean / Median / Max columns; "nm" and blanks excluded automatically).
 3. **Cross-check** — computed metrics vs the company's most recent investor presentation.
 4. **Footnotes** — every figure sourced (filing type, period, accession #, URL; price source
    + timestamp; consensus provider + date).
@@ -42,7 +43,8 @@ Market Equity Value = Shares Outstanding (latest 10-Q) x latest stock price
 TEV = Market Equity Value
     + Long-term debt                      (latest 10-Q)
     + Capital / finance lease obligations (latest 10-Q, non-current)
-    + Minority / noncontrolling interest  (latest 10-Q)
+    + Minority / noncontrolling interest  (latest 10-Q, equity + redeemable NCI summed)
+    + Preferred equity                    (latest 10-Q, carrying value; $0 for most)
     - Working Capital  (= Total Current Assets - Total Current Liabilities, latest 10-Q)
 ```
 > This subtracts FULL net working capital (the house convention), not just cash. Because current
@@ -105,7 +107,7 @@ what to do when a line item is missing or a filing is non-standard).
   (add `--shares "TKR=<count>"` for Up-C/multi-class names; `--consensus-mode capiq_excel` for live
   `=CIQ()` NTM cells). Health check anytime: `python3 assets/selfcheck.py`.
 - **Internet is required** — the skill pulls PRIMARY data live: SEC EDGAR (`data.sec.gov`,
-  `www.sec.gov`) and a keyless price feed (Yahoo Finance). The code-execution sandbox in chat/Cowork
+  `www.sec.gov`) and a keyless price feed (Yahoo → CNBC → stooq, tried in order for resilience). The code-execution sandbox in chat/Cowork
   normally allows this. **If `python3 assets/selfcheck.py` shows EDGAR NOT reachable**, use the
   no-egress fallback: `assets/offline_fetch.py` fetches EDGAR's small per-concept endpoints with the
   web/browser tool and assembles the `_cache/` the pipeline reads; supply the price with

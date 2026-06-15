@@ -38,8 +38,14 @@ BALANCE_SHEET = """<html><body><p>($ in thousands)</p><table>
 </table></body></html>"""
 
 
+# Same balance sheet but with NO scale header -> extract_rows defaults scale to 1 (the 1000x risk).
+NO_SCALE_BS = BALANCE_SHEET.replace("($ in thousands)", "(in dollars)")
+
+BS = {"html": BALANCE_SHEET}  # switchable so tests can simulate a misdetected scale
+
+
 def _fake_get(url, **kw):
-    return (FILING_SUMMARY if url.endswith("FilingSummary.xml") else BALANCE_SHEET).encode("utf-8")
+    return (FILING_SUMMARY if url.endswith("FilingSummary.xml") else BS["html"]).encode("utf-8")
 
 
 fe._get = _fake_get  # isolated: selfcheck runs each test file in its own subprocess
@@ -67,6 +73,29 @@ def run():
     ck("payables EXCLUDED", not any("payable" in l.lower() and "note" not in l.lower() for l in labels))
     ck("asset-side note receivable EXCLUDED", not any("receivable" in l.lower() for l in labels))
     ck("debt-like total = 1,082,685k (404,299 + 678,386)", abs(debt_total - 1_082_685_000) < 1)
+    ck("no scale_note when XBRL total not supplied", r.get("scale_note") is None)
+
+    # --- scale cross-check: XBRL total matches the (correctly-scaled) statement -> no correction ---
+    r = vf.verify_liabilities(1234, "x", xbrl_total_liabilities=1_515_763_000)
+    ck("matching XBRL total -> no scale correction", r.get("scale_note") is None)
+    ck("matching XBRL total -> total unchanged", abs(r["total_liabilities"] - 1_515_763_000) < 1)
+
+    # --- scale cross-check: scale MISDETECTED as 1 (no header), reconciled to XBRL -> auto x1000 ---
+    BS["html"] = NO_SCALE_BS
+    try:
+        r = vf.verify_liabilities(1234, "x", xbrl_total_liabilities=1_515_763_000)
+        ck("misdetected scale auto-corrected (note present)",
+           "auto-corrected" in (r.get("scale_note") or ""))
+        ck("corrected total liabilities = 1,515,763,000", abs(r["total_liabilities"] - 1_515_763_000) < 1)
+        ck("corrected debt-like total = 1,082,685,000",
+           abs(sum(v for _, v in r["debt_like_rows"]) - 1_082_685_000) < 1)
+        ck("effective scale now 1000", abs(r["scale"] - 1000) < 1e-9)
+    finally:
+        BS["html"] = BALANCE_SHEET
+
+    # --- scale cross-check: totals that don't reconcile at all -> warning (no silent correction) ---
+    r = vf.verify_liabilities(1234, "x", xbrl_total_liabilities=5_000_000_000)
+    ck("non-reconciling totals -> WARNING", "WARNING" in (r.get("scale_note") or ""))
 
     print("-" * 60)
     print(f"{n[0] - len(fails)}/{n[0]} passed" + ("" if not fails else f", {len(fails)} FAILED"))

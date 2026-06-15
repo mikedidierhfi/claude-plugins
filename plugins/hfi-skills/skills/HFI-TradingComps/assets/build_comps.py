@@ -94,6 +94,23 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
                          "share count(s) from the latest 10-Q cover page or a market source (sum all "
                          "classes x their prices). Market cap & all multiples are blank until provided.")
             stale_note("shares_outstanding", "Shares outstanding")
+        elif li.get("share_classes_detected", 0) > 1 and T not in shares_override:
+            flags.append(f"Multiple share classes detected ({li['share_classes_detected']} distinct cover-page "
+                         f"counts, e.g. GOOG/GOOGL, BRK): the XBRL pull uses ONE class, so shares — and market "
+                         f"cap — are likely UNDERSTATED. Supply total shares across all classes (sum each "
+                         f"class's count) via --shares \"{T}=<total>\".")
+
+        # Currency / ADR guard: the house bridge assumes price and financials share one currency.
+        def _unit(k):
+            c = item(k).get("citation")
+            return c.get("unit") if isinstance(c, dict) else None
+        nonusd = sorted({u for k in ("current_liabilities", "total_liabilities", "stockholders_equity",
+                                     "cash_and_equivalents", "long_term_debt_noncurrent")
+                         if (u := _unit(k)) and u != "USD"})
+        if nonusd:
+            flags.append(f"Financial statements are reported in {', '.join(nonusd)} (non-USD), while the stock "
+                         f"price is in the listing currency — convert both to one currency before trusting "
+                         f"market cap & TEV. For ADRs, also apply the ADR-to-ordinary share ratio.")
 
         lt_debt = val("long_term_debt_noncurrent")
         if T in debt_override:
@@ -107,9 +124,24 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         fin_lease = val("finance_lease_noncurrent")
         if fin_lease is None:
             flags.append("Finance/capital lease obligations not separately reported — treated as $0.")
+        # Minority interest = equity-section NCI + mezzanine (redeemable) NCI — both are claims ahead of
+        # common, and a single XBRL tag captures only one section, so they are SUMMED.
         minority = val("minority_interest")
-        if minority is None:
+        redeem_nci = val("redeemable_minority_interest")
+        if minority is None and redeem_nci is None:
             flags.append("No minority/noncontrolling interest reported — treated as $0.")
+        elif redeem_nci:
+            flags.append(f"Redeemable (mezzanine) NCI ${redeem_nci/1e6:,.0f}mm is summed with equity-section "
+                         f"NCI ${(minority or 0)/1e6:,.0f}mm — both rank ahead of common in the EV bridge.")
+        # Preferred stock — a claim senior to common, added to EV like minority interest.
+        preferred = val("preferred_equity")
+        if preferred:
+            pref_cite = item("preferred_equity").get("citation")
+            pref_tag = pref_cite.get("tag", "") if isinstance(pref_cite, dict) else ""
+            note = (" at PAR value — par typically understates the liquidation/redemption preference, so "
+                    "verify the preferred's liquidation value in the filing and override if material"
+                    if pref_tag.endswith("PreferredStockValue") else " at carrying value")
+            flags.append(f"Preferred equity ${preferred/1e6:,.0f}mm added to EV{note}.")
         ca = val("current_assets")
         cl = val("current_liabilities")
         wc = li.get("working_capital")
@@ -119,9 +151,10 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
 
         ltd = lt_debt or 0.0
         fl = fin_lease or 0.0
-        mi = minority or 0.0
+        mi = (minority or 0.0) + (redeem_nci or 0.0)
+        pref = preferred or 0.0
         wcu = wc or 0.0
-        tev = (market_equity + ltd + fl + mi - wcu) if market_equity is not None else None
+        tev = (market_equity + ltd + fl + mi + pref - wcu) if market_equity is not None else None
 
         # Liabilities-completeness reconciliation: flag material non-current liabilities NOT captured as
         # debt/leases/deferred-tax/other — i.e. debt under a custom or related-party XBRL tag the
@@ -143,7 +176,7 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
                 # Verify against the PRIMARY source: read the actual 10-Q balance sheet (general).
                 try:
                     acc = (li.get("latest_10Q") or {}).get("accession")
-                    vr = vf.verify_liabilities(li.get("cik"), acc) if acc else {}
+                    vr = vf.verify_liabilities(li.get("cik"), acc, xbrl_total_liabilities=total_liab) if acc else {}
                     dl = [(l, v) for (l, v) in vr.get("debt_like_rows", []) if v]
                     if dl:
                         dtot = sum(v for _, v in dl)
@@ -154,6 +187,8 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
                                 f"--debt \"{T}={dtot/1e6:.0f}\".")
                     else:
                         msg += f" Read the 10-Q balance sheet, then re-run with --debt \"{T}=<$mm>\"."
+                    if vr.get("scale_note"):
+                        msg += f" [{vr['scale_note']}]"
                 except Exception:
                     msg += f" Read the 10-Q balance sheet, then re-run with --debt \"{T}=<$mm>\"."
                 flags.insert(0, msg)
@@ -161,6 +196,13 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         if seq is not None and seq < 0:
             flags.append(f"Negative book equity (${seq/1e6:,.0f}mm) — book-insolvent; EV is entirely "
                          f"market-cap-driven. Scrutinize the liability structure.")
+        # Long-term investments are NOT netted by the house WC definition — flag (don't silently net) when
+        # material, so the analyst can decide whether a non-operating portfolio should be backed out.
+        nc_inv = val("noncurrent_investments")
+        if nc_inv and market_equity and nc_inv > max(50_000_000.0, 0.10 * market_equity):
+            flags.append(f"Long-term investments / marketable securities of ${nc_inv/1e6:,.0f}mm are NOT netted "
+                         f"from EV — the house definition nets current working capital only. If this is a "
+                         f"non-operating portfolio, consider whether to back it out (your call).")
 
         L = {k: li["ltm"][k]["value"] for k in li["ltm"]}
         ebit = L.get("operating_income_ebit")
@@ -173,6 +215,15 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
             flags.append("Operating income (EBIT) not found — EBIT/EBITDA multiples blank.")
         if da is None:
             flags.append("D&A not found via standard tags — EBITDA may be understated; verify.")
+        else:
+            # EBITDA = EBIT + D&A only holds if both are on the SAME period basis. Flag when the LTM
+            # bridge resolved them on different windows (e.g. EBIT is true LTM but D&A degraded to FY).
+            ebit_method = (li["ltm"].get("operating_income_ebit") or {}).get("method")
+            da_method = (li["ltm"].get("depreciation_amortization") or {}).get("method")
+            if ebit is not None and ebit_method and da_method and ebit_method != da_method:
+                flags.append(f"EBITDA period-basis mismatch: EBIT is '{ebit_method}' but D&A is '{da_method}' "
+                             f"— the LTM components span different windows, so EBITDA may be slightly off. "
+                             f"Verify D&A is on a trailing-twelve-month basis.")
         is_financial = (ca is None and cl is None and ebit is None)
         if is_financial:
             flags.insert(0, "FINANCIAL ISSUER (bank/insurer): no classified balance sheet and no "
@@ -208,9 +259,11 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
             "shares_mm": _mm(shares),
             "market_equity_mm": _mm(market_equity),
             "lt_debt_mm": _mm(lt_debt), "finance_lease_mm": _mm(fin_lease),
-            "minority_mm": _mm(minority),
+            "minority_mm": _mm(None if (minority is None and redeem_nci is None) else mi),
+            "redeemable_nci_mm": _mm(redeem_nci), "preferred_mm": _mm(preferred),
             "current_assets_mm": _mm(ca), "current_liabilities_mm": _mm(cl),
             "working_capital_mm": _mm(wc), "cash_mm": _mm(val("cash_and_equivalents")),
+            "noncurrent_investments_mm": _mm(nc_inv),
             "tev_mm": _mm(tev),
             "ltm_mm": {"revenue": _mm(rev), "ebit": _mm(ebit), "da": _mm(da),
                        "ebitda": _mm(ebitda), "cfo": _mm(cfo), "net_income": _mm(ni)},
@@ -226,7 +279,7 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         "as_of_date": as_of,
         "currency": "USD",
         "units": "$ in millions; shares in millions; multiples in x",
-        "methodology": "House EV = mkt equity + LT debt + finance leases + minority interest - working capital",
+        "methodology": "House EV = mkt equity + LT debt + finance leases + preferred + minority interest (incl. redeemable) - working capital",
         "consensus_mode": consensus_mode,
         "tickers": [t.upper() for t in valid],
         "companies": companies,
