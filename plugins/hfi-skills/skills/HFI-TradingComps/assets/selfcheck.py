@@ -36,7 +36,7 @@ def main():
     except Exception as e:
         results.append(("SEC EDGAR reachable (soft)", False, False, repr(e)[:80]))
 
-    for tf in ("test_engine.py", "test_render.py", "test_valuation.py", "test_offline.py"):
+    for tf in ("test_engine.py", "test_render.py", "test_valuation.py", "test_offline.py", "test_verify.py"):
         path = os.path.join(TESTS, tf)
         if not os.path.exists(path):
             results.append((tf, False, True, "missing")); continue

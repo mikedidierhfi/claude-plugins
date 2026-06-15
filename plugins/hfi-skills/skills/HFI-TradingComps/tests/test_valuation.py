@@ -65,6 +65,11 @@ def _resolve(t, cache=None):
 cf.build_line_items = lambda t, cache: FIX[t]
 cf.fe.resolve_cik = _resolve
 mp.get_price = lambda t: {"price": PRICE[t], "as_of": "2026-06-05", "source": "test", "source_url": "u"}
+# Stub the 10-Q balance-sheet reader (offline + deterministic) so the reconciliation flag's
+# primary-source verification step is exercised without network.
+bc.vf.verify_liabilities = lambda cik, acc: {
+    "debt_like_rows": [("Related-party convertible note payable", 4_800_000_000.0)],
+    "total_liabilities": 5_000_000_000.0, "url": "u", "scale": 1000}
 
 
 def approx(a, b, tol=1e-6):
@@ -120,6 +125,8 @@ def run():
     # --- liabilities-completeness: uncaptured non-current liabilities (custom-tag debt) -> flag ---
     c = bc.assemble(["HIDDENDEBT"], "")["companies"]["HIDDENDEBT"]
     ck("reconciliation flag fires on hidden debt", any("NOT captured by" in f for f in c["flags"]))
+    ck("flag reads the 10-Q + suggests --debt",
+       any(("Reading the 10-Q" in f and "--debt" in f) for f in c["flags"]))
     ck("negative book equity flagged", any("Negative book equity" in f for f in c["flags"]))
 
     # --- --debt override: injects verified debt, suppresses the reconciliation nag, lifts TEV ---

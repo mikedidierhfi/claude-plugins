@@ -9,7 +9,7 @@
     ]
   },
   "long_term_debt_noncurrent": {
-    "_note": "Totals first (used when present); then specific debt concepts for filers that only tag components (e.g. SecuredLongTermDebt caught $404mm of IBRX's debt the original 3-tag list missed). Custom/related-party tags under a company's own namespace are invisible to companyfacts — the liabilities reconciliation flag catches those residuals.",
+    "_note": "Totals first (used when present); then specific debt concepts for filers that only tag components (secured / convertible / related-party / notes). Debt under a company's OWN extension namespace is invisible to companyfacts for any filer — the liabilities-reconciliation flag + the 10-Q balance-sheet reader (verify_filing.py) catch those residuals.",
     "kind": "instant", "unit": "USD",
     "tags": [
       {"taxonomy": "us-gaap", "tag": "LongTermDebtNoncurrent"},

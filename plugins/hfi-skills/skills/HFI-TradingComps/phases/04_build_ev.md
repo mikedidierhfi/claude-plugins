@@ -11,6 +11,11 @@ working capital = total current assets − total current liabilities
 - Missing add-backs (lease/minority) are treated as $0 **and flagged** — confirm that's right (most
   issuers genuinely have none).
 - Missing working capital (financials) → omitted **and flagged** → reconsider including the name.
+- **Debt completeness (any filer):** the XBRL pull can miss debt under custom/related-party tags. The
+  engine reconciles total liabilities vs what it captured and, if a material gap remains, **reads the
+  actual 10-Q balance sheet** (`assets/verify_filing.py`) and lists the debt-like lines + a suggested
+  figure in the flag. Verify it (exclude equity-linked warrants per the house def) and re-run with
+  `--debt "<TKR>=<$mm>"`. See [common_mistakes.md](../reference/common_mistakes.md) #1a.
 - In the workbook these are **live Excel formulas**, so the user can audit/trace each term.
 
 Verify against [sanity_checks.md](../reference/sanity_checks.md): TEV > 0, ties to market cap ± net debt.

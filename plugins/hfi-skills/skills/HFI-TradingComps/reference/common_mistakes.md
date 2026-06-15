@@ -11,19 +11,23 @@ the target; otherwise it skips the tag and, if nothing fresh exists, returns *mi
 `stale_only` diagnostic. **Never** report a multi-year-old figure. If a needed item comes back
 missing, get it from the actual filing/cover page — don't reach for the stale series.
 
-## 1a. Debt under non-standard / custom XBRL tags — the silent understatement (IBRX case)
-companyfacts exposes only standard `us-gaap`/`dei` concepts. A heavily-financed name can carry large
-debt the original 3-tag list missed: ImmunityBio (IBRX) had **$404mm under `SecuredLongTermDebt`** (a
-standard tag, now added) **plus $678mm of related-party convertible notes under a custom `ibrx_`
-namespace the API can't see at all** — the engine returned **$0**, understating TEV ~15%.
-→ **Two-part fix:** (1) the long-term-debt tag list is broadened (secured / convertible / related-party
-/ notes concepts). (2) A **liabilities-completeness reconciliation** compares total liabilities to what
-was captured (debt + leases + deferred tax + other); a large unexplained non-current residual — gated
-on materiality vs market cap so clean large-caps don't false-positive — raises a flag: *"~$Xmm of
-non-current liabilities NOT captured … read the 10-Q, re-run with --debt."* When you've verified the
-true figure from the balance sheet, inject it: `build_comps.py IBRX --debt "IBRX=1082.685"` (in $mm),
-which also suppresses the flag. Watch the **negative book equity** flag too (book-insolvent → EV is
-purely market-cap-driven; scrutinize liabilities).
+## 1a. Debt under non-standard / custom XBRL tags — and verifying against the 10-Q
+companyfacts exposes only standard `us-gaap`/`dei` concepts, so for ANY filer a debt line can be
+missed two ways: (a) tagged with a less-common standard concept not in the list, or (b) under the
+company's OWN extension namespace, which the API can't expose at all. (Real example: a clinical
+biotech carried **$404mm under `SecuredLongTermDebt`** plus a **$678mm related-party convertible
+note under a custom tag** — the engine first returned **$0**, understating TEV ~15%.)
+→ **Three-part fix, all general (no per-ticker logic):**
+1. **Broadened long-term-debt tags** — secured / convertible / related-party / notes concepts.
+2. **Liabilities-completeness reconciliation** — compares total liabilities to what was captured
+   (debt + leases + deferred tax + other); a material unexplained non-current residual, *gated vs
+   market cap so clean large-caps don't false-positive*, triggers verification.
+3. **Reads the actual 10-Q balance sheet** (`assets/verify_filing.py`, via EDGAR's rendered financial
+   statements — works for any filer) and lists the debt-like liability lines + a suggested figure in
+   the flag.
+Then verify (exclude equity-linked items like warrants per the house definition) and inject the
+confirmed total: `build_comps.py <TKR> --debt "<TKR>=<$mm>"` (in $mm), which also suppresses the flag.
+Watch the **negative book equity** flag too (book-insolvent → EV is purely market-cap-driven).
 
 ## 2. Financials & alternative asset managers don't fit this methodology
 Banks, insurers, and **alternative asset managers** (BX, KKR, ARES, OWL, APO, CG, TPG, …) use an

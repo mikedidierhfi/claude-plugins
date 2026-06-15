@@ -18,6 +18,7 @@ import argparse, datetime as dt, json, os, sys
 import company_facts as cf
 import market_price as mp
 import consensus_input as ci
+import verify_filing as vf
 
 MM = 1_000_000.0
 
@@ -99,7 +100,7 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
             lt_debt = debt_override[T]
             flags.append(f"Long-term debt set to supplied value ${lt_debt/1e6:,.0f}mm (verified from the "
                          f"10-Q) — overrides the XBRL pull. Use this when debt is under custom/related-party "
-                         f"tags the companyfacts API can't see (e.g. the IBRX related-party notes).")
+                         f"tags the companyfacts API can't see.")
         elif lt_debt is None:
             flags.append("Long-term debt not found via standard XBRL tags — verify against the 10-Q.")
             stale_note("long_term_debt_noncurrent", "Long-term debt")
@@ -136,10 +137,26 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
             residual = nc_liab - captured_nc
             ref = market_equity if market_equity else (total_liab or nc_liab)
             if residual > max(50_000_000.0, 0.05 * ref):
-                flags.insert(0, f"~${residual/1e6:,.0f}mm of non-current liabilities are NOT captured by "
-                                f"standard debt/lease tags — likely debt under a custom or related-party "
-                                f"XBRL tag the companyfacts API can't see. Long-term debt and TEV are probably "
-                                f"UNDERSTATED; read the 10-Q balance sheet and re-run with --debt \"{T}=<$mm>\".")
+                msg = (f"~${residual/1e6:,.0f}mm of non-current liabilities are NOT captured by standard "
+                       f"debt/lease tags — likely debt under a custom/related-party tag the companyfacts "
+                       f"API can't see, so long-term debt & TEV are probably UNDERSTATED.")
+                # Verify against the PRIMARY source: read the actual 10-Q balance sheet (general).
+                try:
+                    acc = (li.get("latest_10Q") or {}).get("accession")
+                    vr = vf.verify_liabilities(li.get("cik"), acc) if acc else {}
+                    dl = [(l, v) for (l, v) in vr.get("debt_like_rows", []) if v]
+                    if dl:
+                        dtot = sum(v for _, v in dl)
+                        lines = "; ".join(f"{l} ${v/1e6:,.0f}mm" for l, v in dl)
+                        msg += (f" Reading the 10-Q balance sheet finds debt-like liabilities totaling "
+                                f"~${dtot/1e6:,.0f}mm [{lines}] — verify (exclude equity-linked items such "
+                                f"as warrants per the house definition), then re-run with "
+                                f"--debt \"{T}={dtot/1e6:.0f}\".")
+                    else:
+                        msg += f" Read the 10-Q balance sheet, then re-run with --debt \"{T}=<$mm>\"."
+                except Exception:
+                    msg += f" Read the 10-Q balance sheet, then re-run with --debt \"{T}=<$mm>\"."
+                flags.insert(0, msg)
         seq = val("stockholders_equity")
         if seq is not None and seq < 0:
             flags.append(f"Negative book equity (${seq/1e6:,.0f}mm) — book-insolvent; EV is entirely "
@@ -237,7 +254,7 @@ def main(argv=None):
     ap.add_argument("--prices", help='supply prices (for no-egress runs, or to pin a price), '
                     'e.g. "AAPL=307.34,MSFT=416.67"')
     ap.add_argument("--debt", help='override long-term debt IN $MM when it is under custom/related-party '
-                    'tags the XBRL pull misses (verify in the 10-Q first), e.g. "IBRX=1082.685"')
+                    'tags the XBRL pull misses (verify in the 10-Q first), e.g. "TKR=1234.5"')
     ap.add_argument("--json", action="store_true", help="print the assembled structure as JSON")
     args = ap.parse_args(argv)
 
