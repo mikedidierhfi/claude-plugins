@@ -20,6 +20,7 @@ All outputs are in $ MILLIONS, matching the consensus schema in consensus_input.
 import datetime as dt
 import json
 import os
+import urllib.error
 import urllib.request
 
 STABLE_URL = "https://financialmodelingprep.com/stable/analyst-estimates"
@@ -97,15 +98,25 @@ def ntm_for(symbol, key, as_of=None, _fetch=None):
 
 
 def fetch_ntm(tickers, key, as_of=None):
-    """{TICKER: record-or-None} for all tickers; per-ticker failures degrade to None (never raises)."""
-    out = {}
+    """Return ({TICKER: record-or-None}, {TICKER: reason}) for all tickers. Never raises; the reasons
+    dict explains every blank so the run can flag it instead of silently dropping NTM — most notably
+    HTTP 402 (the symbol isn't covered by the FMP plan)."""
+    out, notes = {}, {}
     for t in tickers:
         T = t.upper()
         try:
-            out[T] = ntm_for(T, key, as_of=as_of)
-        except Exception:
+            rec = ntm_for(T, key, as_of=as_of)
+            out[T] = rec
+            if rec is None:
+                notes[T] = "FMP returned no forward estimates"
+        except urllib.error.HTTPError as e:
             out[T] = None
-    return out
+            notes[T] = ("not covered by your FMP plan (HTTP 402) — upgrade the plan or use manual/CapIQ"
+                        if e.code == 402 else f"FMP HTTP {e.code}")
+        except Exception as e:
+            out[T] = None
+            notes[T] = f"FMP error: {type(e).__name__}"
+    return out, notes
 
 
 def main(argv=None):

@@ -56,6 +56,13 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         consensus_note = ('consensus_mode=fmp but no FMP key was found — set the FMP_API_KEY '
                           'environment variable or ~/.hfi-tradingcomps.json {"fmp_api_key": "..."}. '
                           'NTM columns left blank.')
+    else:
+        limited = sorted(t for t, r in (cons.get("fmp_notes") or {}).items() if "402" in r)
+        if limited:
+            consensus_note = (f"NTM unavailable for {', '.join(limited)} — not covered by your FMP "
+                              f"plan (HTTP 402). Upgrade the FMP plan for full coverage, or use "
+                              f"--consensus-mode manual / capiq_excel for those names. NTM filled for "
+                              f"the rest.")
 
     companies = {}
     errors = []

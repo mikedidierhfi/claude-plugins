@@ -65,13 +65,30 @@ def run():
         return {"ntm_ebitda": 1.0} if sym == "AAPL" else None
     fc.ntm_for = stub
     try:
-        multi = fc.fetch_ntm(["AAPL", "MISS", "BOOM"], "k", as_of=AS_OF)
-        ck("fetch_ntm keyed by ticker", set(multi.keys()) == {"AAPL", "MISS", "BOOM"})
-        ck("fetch_ntm maps a hit", multi["AAPL"] == {"ntm_ebitda": 1.0})
-        ck("fetch_ntm tolerates a miss", multi["MISS"] is None)
-        ck("fetch_ntm swallows a per-ticker error", multi["BOOM"] is None)
+        data, notes = fc.fetch_ntm(["AAPL", "MISS", "BOOM"], "k", as_of=AS_OF)
+        ck("fetch_ntm keyed by ticker", set(data.keys()) == {"AAPL", "MISS", "BOOM"})
+        ck("fetch_ntm maps a hit", data["AAPL"] == {"ntm_ebitda": 1.0})
+        ck("fetch_ntm tolerates a miss", data["MISS"] is None)
+        ck("fetch_ntm swallows a per-ticker error", data["BOOM"] is None)
+        ck("notes explain a miss", bool(notes.get("MISS")))
+        ck("notes explain an error", "RuntimeError" in notes.get("BOOM", ""))
+        ck("no note for a hit", "AAPL" not in notes)
     finally:
         fc.ntm_for = saved_ntm
+
+    # HTTP 402 (symbol not on the FMP plan) -> blank + an explicit plan note (the AVGO/QCOM case)
+    import urllib.error
+    saved_ntm2 = fc.ntm_for
+
+    def stub402(sym, key, as_of=None):
+        raise urllib.error.HTTPError("u", 402, "Payment Required", {}, None)
+    fc.ntm_for = stub402
+    try:
+        data, notes = fc.fetch_ntm(["AVGO"], "k", as_of=AS_OF)
+        ck("402 -> blank NTM", data["AVGO"] is None)
+        ck("402 -> note cites plan + 402", "402" in notes["AVGO"] and "plan" in notes["AVGO"])
+    finally:
+        fc.ntm_for = saved_ntm2
 
     # key resolution: env var wins
     old = os.environ.get("FMP_API_KEY")

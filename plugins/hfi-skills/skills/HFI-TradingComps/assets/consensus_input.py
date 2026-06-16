@@ -50,14 +50,14 @@ def load_consensus(tickers, path=None, fmp_key=None):
             file_data = json.load(f)
         src = path
 
-    fmp_data = {}
+    fmp_data, fmp_notes = {}, {}
     if fmp_key:
         try:
             import fmp_consensus as fc
-            fmp_data = fc.fetch_ntm(tickers, fmp_key)
+            fmp_data, fmp_notes = fc.fetch_ntm(tickers, fmp_key)
             src = src or "FMP analyst consensus (NTM, calendarized)"
         except Exception:
-            fmp_data = {}
+            fmp_data, fmp_notes = {}, {}
 
     out, needs = {}, []
     for t in tickers:
@@ -73,7 +73,8 @@ def load_consensus(tickers, path=None, fmp_key=None):
         else:
             out[T] = blank_record()              # tier 3
             needs.append(T)
-    return {"consensus": out, "source_file": src, "needs_consensus_for": needs}
+    return {"consensus": out, "source_file": src, "needs_consensus_for": needs,
+            "fmp_notes": fmp_notes}
 
 
 def write_template(tickers, path):
