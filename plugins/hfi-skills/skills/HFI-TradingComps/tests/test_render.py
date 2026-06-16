@@ -82,7 +82,20 @@ def run():
     if any(s.startswith("=CIQ(") for s in vB):
         fails.append("  FAIL manual.should_not_have_CIQ_formulas")
 
-    passed = (len(checks) + 2) - len(fails)
+    # Case C: the NTM source label must reflect the ACTUAL mode (regression — the workbook used to
+    # always say "via Capital IQ" even when the data came from FMP).
+    pC = os.path.join(OUT, "smoke_fmp.xlsx")
+    bx.render(_comps("fmp", {"AAPL": _company("Apple Inc.", 320193)}), pC)
+    vC = all_values(pC)
+    if not any("via Financial Modeling Prep" in s for s in vC):
+        fails.append("  FAIL fmp.source_label_names_FMP")
+    if any("Capital IQ" in s for s in vC):
+        fails.append("  FAIL fmp.must_not_mention_CapIQ")
+    # and capiq mode must still name Capital IQ
+    if not any("via Capital IQ" in s for s in vA):
+        fails.append("  FAIL capiq.source_label_names_CapIQ")
+
+    passed = (len(checks) + 5) - len(fails)
     print("-" * 56)
     print(f"{passed} passed, {len(fails)} failed")
     for f in fails:

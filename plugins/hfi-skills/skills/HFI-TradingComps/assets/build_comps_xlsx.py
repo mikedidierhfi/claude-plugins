@@ -186,7 +186,12 @@ def render(comps, path):
     emit_input("ni", "Net income (LTM)", lambda co: co["ltm_mm"]["net_income"])
 
     # ---------- NTM consensus ----------
-    section("NTM CONSENSUS (Wall Street via Capital IQ)")
+    # Label the section with the ACTUAL source for this run (don't hard-code a provider).
+    ntm_src = {"capiq_excel": "Wall Street consensus via Capital IQ",
+               "fmp": "Wall Street consensus via Financial Modeling Prep",
+               "manual": "Wall Street consensus — manual input",
+               "skip": "not populated — LTM-only run"}.get(mode, "Wall Street consensus")
+    section(f"NTM CONSENSUS ({ntm_src})")
     emit_ntm("ntm_ebitda", "EBITDA (NTM)", "ebitda")
     emit_ntm("ntm_ebit", "EBIT (NTM)", "ebit")
     emit_ntm("ntm_cfo", "CFO (NTM)", "cfo")
@@ -268,8 +273,8 @@ def render(comps, path):
          "LTM analysis above is complete and needs no paid data subscription. To populate NTM later: "
          "re-run with --consensus-mode fmp (a free Financial Modeling Prep key), the Capital IQ Excel "
          "add-in, or paste estimates manually."),
-        "For multi-class issuers the CapIQ identifier may need adjusting (e.g. \"BRK.B\" or "
-        "\"NYSE:BRK.B\") and market equity should sum all classes × their prices.",
+        "For multi-class issuers, the data-provider ticker may need adjusting (e.g. BRK.B vs BRK-B) "
+        "and market equity should sum all share classes × their respective prices.",
     ]
     for n in notes:
         cell(state["r"], 1, "•  " + n, size=8, wrap=True, color="404040")
