@@ -14,6 +14,10 @@ presentation** (IR website). This catches tagging errors and surfaces the adjust
    - Period mismatch: deck may show a single quarter or guidance, not LTM — align periods before judging.
 4. Record the comparison: add a short cross-check note per company (deck date + URL) and, if useful,
    an optional "Company Adj. EBITDA (per IR deck)" row in the workbook, clearly labeled and cited.
+5. **Surface the deck link in the chat reply.** In the "Sources & citations" block, every company MUST
+   get an **"Investor materials"** line with a direct link to the deck and the exact slide/page you
+   used (e.g., "Q1-FY26 earnings presentation, slide 7 — <url>"). If no current deck exists or the IR
+   site is inaccessible, state that explicitly on the line. This is required output, not optional.
 
 ## Rules
 - The **computed clean GAAP figure stays the default**; the company's adjusted number is shown for

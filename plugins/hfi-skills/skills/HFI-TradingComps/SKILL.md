@@ -120,8 +120,13 @@ what to do when a line item is missing or a filing is non-standard).
   primary source AND **deep links to the exact statement pages** (balance sheet / income / cash-flow
   R-files), plus the per-figure XBRL concept, form, period, and accession, and the LTM-bridge periods.
   **Paste this block into your chat response verbatim** (don't summarize away the links) so the user
-  can click straight through to every number's source. Add the price source + timestamp and, if you
-  did the Phase-06 IR-deck cross-check, the deck URL/page too.
+  can click straight through to every number's source.
+- **Deck links are REQUIRED, not optional.** After the auto-generated block, append an **"Investor
+  materials"** line for each company with a **direct link to the most recent investor presentation /
+  earnings deck** and the **exact slide/page** you cross-checked against (Phase 06). If a company has
+  no current deck (or its IR site is inaccessible), say so explicitly on that line — never omit it.
+  The SEC/price links are emitted automatically; the deck link is the one source YOU add, from the
+  cross-check, so every figure — computed and company-reported — is traceable by click.
 - **SEC etiquette:** EDGAR wants a descriptive `User-Agent` (set in `fetch_edgar.py`; override via the
   `SEC_UA` env var with your name + email).
 - **Install:** load it through the Skills system (upload the skill folder, or the
