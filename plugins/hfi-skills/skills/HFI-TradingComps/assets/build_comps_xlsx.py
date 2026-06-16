@@ -259,9 +259,15 @@ def render(comps, path):
          "they populate from your CapIQ login on open. If you see #NAME?, the CapIQ Excel add-in is not "
          "loaded — enable it, paste consensus manually, or pull via CapIQ web. CFO consensus (IQ_CFO_EST) "
          "coverage is thin; verify or leave blank.") if mode == "capiq_excel" else
+        ("NTM (Next-Twelve-Months) consensus is from Financial Modeling Prep analyst estimates, "
+         "calendarized to a true next-12-months figure (a time-weighted blend of the current and next "
+         "fiscal-year consensus). FMP does not provide a CFO estimate, so TEV/CFO-NTM stays blank. "
+         "Values are static as of the run date; verify against the provider for a decision.")
+        if mode == "fmp" else
         ("NTM (Next-Twelve-Months) consensus columns are optional and left blank in this run — the "
          "LTM analysis above is complete and needs no paid data subscription. To populate NTM later: "
-         "re-run with the Capital IQ Excel add-in (live =CIQ formulas), or paste estimates manually."),
+         "re-run with --consensus-mode fmp (a free Financial Modeling Prep key), the Capital IQ Excel "
+         "add-in, or paste estimates manually."),
         "For multi-class issuers the CapIQ identifier may need adjusting (e.g. \"BRK.B\" or "
         "\"NYSE:BRK.B\") and market equity should sum all classes × their prices.",
     ]

@@ -40,8 +40,9 @@ def blank_record():
     return {k: None for k in NTM_KEYS} | {"source": None, "as_of": None, "_provided": False}
 
 
-def load_consensus(tickers, path=None):
-    """Tier 1 (connector) -> Tier 2 (file) -> Tier 3 (blank). Returns {consensus, needs, source}."""
+def load_consensus(tickers, path=None, fmp_key=None):
+    """Tier 1 (connector) -> Tier 1b (FMP API, if a key is supplied) -> Tier 2 (file) -> Tier 3
+    (blank). Returns {consensus, needs, source}."""
     file_data = {}
     src = None
     if path and os.path.exists(path):
@@ -49,10 +50,21 @@ def load_consensus(tickers, path=None):
             file_data = json.load(f)
         src = path
 
+    fmp_data = {}
+    if fmp_key:
+        try:
+            import fmp_consensus as fc
+            fmp_data = fc.fetch_ntm(tickers, fmp_key)
+            src = src or "FMP analyst consensus (NTM, calendarized)"
+        except Exception:
+            fmp_data = {}
+
     out, needs = {}, []
     for t in tickers:
         T = t.upper()
         rec = fetch_consensus_via_connector(T)  # tier 1
+        if rec is None:
+            rec = fmp_data.get(T)                # tier 1b (FMP)
         if rec is None:
             rec = file_data.get(T)               # tier 2
         if rec and any(rec.get(k) is not None for k in NTM_KEYS):

@@ -184,6 +184,22 @@ def run():
     ck("LT-investments materiality flag", any("Long-term investments" in f for f in c["flags"]))
     ck("LT-investments NOT netted (TEV unchanged 58,500)", approx(c["tev_mm"], 58500.0))
 
+    # --- NTM multiples must divide TEV($mm) by consensus($mm); guards the 1e6 unit bug ---
+    saved_lc = bc.ci.load_consensus
+    bc.ci.load_consensus = lambda tickers, path=None, fmp_key=None: {
+        "consensus": {"OPER": {"ntm_ebitda": 5850.0, "ntm_ebit": 4500.0, "ntm_cfo": None,
+                               "ntm_net_income": 2925.0, "source": "test", "as_of": "x",
+                               "_provided": True}},
+        "needs_consensus_for": [], "source_file": "test"}
+    try:
+        c = bc.assemble(["OPER"], "", consensus_mode="manual")["companies"]["OPER"]
+        ck("NTM TEV/EBITDA = 10.0x (58,500/5,850, not 1e6 off)", approx(c["multiples"]["ev_ebitda_ntm"], 10.0))
+        ck("NTM TEV/EBIT = 13.0x", approx(c["multiples"]["ev_ebit_ntm"], 13.0))
+        ck("NTM TEV/NI = 20.0x", approx(c["multiples"]["ev_ni_ntm"], 20.0))
+        ck("NTM TEV/CFO blank when consensus missing", c["multiples"]["ev_cfo_ntm"] is None)
+    finally:
+        bc.ci.load_consensus = saved_lc
+
     print("-" * 60)
     print(f"{n[0] - len(fails)}/{n[0]} passed" + ("" if not fails else f", {len(fails)} FAILED"))
     for f in fails:

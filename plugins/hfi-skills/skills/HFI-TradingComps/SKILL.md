@@ -6,7 +6,8 @@ description: >-
   TEV/Net Income) — computed from PRIMARY SEC filings (latest 10-Q and 10-K) and the latest stock
   price, delivered as a clean, footnoted, formula-driven Excel workbook. The trailing-twelve-month
   (LTM) analysis needs NO paid data subscription. Optional Next-Twelve-Months (NTM) consensus
-  columns populate from Capital IQ (Excel add-in) or manual input. Use whenever the user wants to
+  columns populate automatically from Financial Modeling Prep (low-cost API key), or from Capital IQ
+  (Excel add-in) or manual input. Use whenever the user wants to
   compare public companies on valuation, build a trading comps / comp set, compute enterprise value,
   or see EV multiples side by side. On invocation, prompt the user for the tickers to compare.
 ---
@@ -104,8 +105,13 @@ what to do when a line item is missing or a filing is non-standard).
   (the only third-party dependency; if the sandbox doesn't have it, `pip install openpyxl` first).
   Do NOT assume a specific interpreter path or a Windows/PowerShell shell — those are Claude Code only.
 - **One command does a full run:** `python3 assets/build_comps.py <TICKERS> --xlsx <out.xlsx>`
-  (add `--shares "TKR=<count>"` for Up-C/multi-class names; `--consensus-mode capiq_excel` for live
-  `=CIQ()` NTM cells). Health check anytime: `python3 assets/selfcheck.py`.
+  (add `--shares "TKR=<count>"` for Up-C/multi-class names). Health check anytime:
+  `python3 assets/selfcheck.py`.
+- **NTM consensus options** (`--consensus-mode`): `fmp` auto-fills NTM from Financial Modeling Prep —
+  needs an `FMP_API_KEY` env var or `~/.hfi-tradingcomps.json` `{"fmp_api_key": "..."}` (calendarized
+  FY1/FY2 blend; FMP has no CFO estimate so NTM CFO stays blank); `capiq_excel` writes live `=CIQ()`
+  cells (needs the CapIQ add-in); `manual` reads a pasted JSON; `skip` (default) leaves NTM blank. If
+  a key is configured, prefer `fmp` so the NTM columns populate automatically.
 - **Internet is required** — the skill pulls PRIMARY data live: SEC EDGAR (`data.sec.gov`,
   `www.sec.gov`) and a keyless price feed (Yahoo → CNBC → stooq, tried in order for resilience). The code-execution sandbox in chat/Cowork
   normally allows this. **If `python3 assets/selfcheck.py` shows EDGAR NOT reachable**, use the

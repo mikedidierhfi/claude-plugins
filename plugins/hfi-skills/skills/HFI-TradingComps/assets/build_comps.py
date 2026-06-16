@@ -43,7 +43,19 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
     shares_override = {k.upper(): v for k, v in (shares_override or {}).items()}
     prices_override = {k.upper(): v for k, v in (prices_override or {}).items()}
     debt_override = {k.upper(): v for k, v in (debt_override or {}).items()}
-    cons = ci.load_consensus([t.upper() for t in tickers], consensus_path)
+    fmp_key = None
+    if consensus_mode == "fmp":
+        try:
+            import fmp_consensus as fc
+            fmp_key = fc.get_key()
+        except Exception:
+            fmp_key = None
+    cons = ci.load_consensus([t.upper() for t in tickers], consensus_path, fmp_key=fmp_key)
+    consensus_note = None
+    if consensus_mode == "fmp" and not fmp_key:
+        consensus_note = ('consensus_mode=fmp but no FMP key was found — set the FMP_API_KEY '
+                          'environment variable or ~/.hfi-tradingcomps.json {"fmp_api_key": "..."}. '
+                          'NTM columns left blank.')
 
     companies = {}
     errors = []
@@ -236,16 +248,19 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         ntm = {"ebitda": c.get("ntm_ebitda"), "ebit": c.get("ntm_ebit"),
                "cfo": c.get("ntm_cfo"), "net_income": c.get("ntm_net_income")}
 
-        # multiples (TEV in $, denominators in $ -> unitless)
+        # Multiples are unitless, but the two sides must share units. LTM denominators come from
+        # filings in DOLLARS (matching TEV in dollars); NTM consensus is stored in $MM, so NTM
+        # multiples must divide TEV-in-$mm by the $mm consensus (else they're 1e6 off).
+        tev_mm_v = _mm(tev)
         mult = {
             "ev_ebitda_ltm": _safe_mult(tev, ebitda),
             "ev_ebit_ltm": _safe_mult(tev, ebit),
             "ev_cfo_ltm": _safe_mult(tev, cfo),
             "ev_ni_ltm": _safe_mult(tev, ni),
-            "ev_ebitda_ntm": _safe_mult(tev, ntm["ebitda"]),
-            "ev_ebit_ntm": _safe_mult(tev, ntm["ebit"]),
-            "ev_cfo_ntm": _safe_mult(tev, ntm["cfo"]),
-            "ev_ni_ntm": _safe_mult(tev, ntm["net_income"]),
+            "ev_ebitda_ntm": _safe_mult(tev_mm_v, ntm["ebitda"]),
+            "ev_ebit_ntm": _safe_mult(tev_mm_v, ntm["ebit"]),
+            "ev_cfo_ntm": _safe_mult(tev_mm_v, ntm["cfo"]),
+            "ev_ni_ntm": _safe_mult(tev_mm_v, ntm["net_income"]),
         }
         pe_ltm = _safe_mult(market_equity, ni) if include_pe else None
 
@@ -286,6 +301,7 @@ def assemble(tickers, cache_dir, consensus_path=None, as_of=None, include_pe=Tru
         "errors": errors,
         "needs_consensus_for": cons["needs_consensus_for"],
         "consensus_source_file": cons["source_file"],
+        "consensus_note": consensus_note,
     }
 
 
@@ -297,10 +313,11 @@ def main(argv=None):
                          "in place even when its own folder is read-only)")
     ap.add_argument("--consensus", help="path to consensus JSON (NTM)")
     ap.add_argument("--consensus-mode", default="skip",
-                    choices=["capiq_excel", "manual", "skip"],
+                    choices=["capiq_excel", "manual", "skip", "fmp"],
                     help="skip (default) = LTM-only, NTM blank (no subscription needed); "
-                         "capiq_excel = live =CIQ() NTM formulas (needs CapIQ add-in); "
-                         "manual = static NTM from --consensus JSON")
+                         "fmp = auto-fill NTM from Financial Modeling Prep (needs FMP_API_KEY env or "
+                         "~/.hfi-tradingcomps.json); capiq_excel = live =CIQ() NTM formulas (needs "
+                         "CapIQ add-in); manual = static NTM from --consensus JSON")
     ap.add_argument("--xlsx", help="also render an Excel workbook to this path")
     ap.add_argument("--shares", help='override shares outstanding for multi-class/Up-C names, '
                     'e.g. "OWL=675802413,ARES=222028421" (Class A from the 10-Q cover)')

@@ -22,8 +22,12 @@ This is the moment the skill "prompts the user for which companies to compare."
 ## Step 2 — Confirm options (one `AskUserQuestion` call, up to 4 questions)
 Ask only if it matters; use sensible defaults and state them. Suggested questions:
 1. **Consensus / NTM data** — "How should I get the Next-Twelve-Months Wall Street consensus?"
-   - *"I'll paste it (recommended)"* → you'll generate a template for them to fill (see Phase 05).
-   - *"Pull via Chrome from my logged-in provider"* → name the provider; use Chrome in Phase 05.
+   First check whether an FMP key is configured (`python assets/fmp_consensus.py <TKR>` prints data, or
+   `FMP_API_KEY`/`~/.hfi-tradingcomps.json` exists). If so, **default to FMP** and say so.
+   - *"FMP auto (recommended if a key is set)"* → run `--consensus-mode fmp`; NTM fills automatically
+     (calendarized FY1/FY2; no CFO estimate). 
+   - *"I'll paste it"* → generate a template to fill (Phase 05), run `--consensus-mode manual`.
+   - *"CapIQ Excel add-in"* → run `--consensus-mode capiq_excel` (live `=CIQ()` cells).
    - *"Skip NTM — LTM only"* → leave NTM blank (workbook still complete on the LTM side).
 2. **Operating leases** — "Include operating-lease liabilities in EV?" Default **No** (capital/finance
    leases only, per the house definition). Yes = add non-current operating lease liability (footnoted).
