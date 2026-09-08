@@ -1,0 +1,20 @@
+{
+  "name": "hfi",
+  "interface": {
+    "displayName": "HFI Capital Management"
+  },
+  "plugins": [
+    {
+      "name": "hfi-deals",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hfi-deals"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

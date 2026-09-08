@@ -1,16 +1,18 @@
-# HFI Claude plugins
+# HFI plugins
 
-HFI Capital Management's Claude plugin marketplace. One repo that distributes HFI's Claude plugins, so people install once and get updates automatically instead of being handed a file each time.
+HFI Capital Management's plugin marketplace for Claude, Codex and ChatGPT. One repo that distributes HFI's plugins, so people install once and get updates automatically instead of being handed a file each time.
 
 This repo holds plugin config and skills only. It contains no server code and no secrets. The deal tools run as a separate remote service; the `hfi-deals` plugin points Claude at that service and signs each person in with their HFI Google account. Access is gated by the service's own allowlist, not by anything in this repo.
 
 ## What's in here
 
 ```
-.claude-plugin/marketplace.json   the marketplace manifest (lists published plugins)
+.claude-plugin/marketplace.json   marketplace manifest for Claude (Cowork, Desktop, Code)
+.agents/plugins/marketplace.json  marketplace manifest for Codex and ChatGPT
 plugins/
-  hfi-deals/                      connects Claude to the deal pipeline (MCP, OAuth sign-in)
-  hfi-skills/                     scaffold for HFI-authored skills (not yet published)
+  hfi-deals/                      connects the assistant to the deal pipeline (MCP, OAuth sign-in);
+                                  .claude-plugin/ and .codex-plugin/ manifests share one .mcp.json
+  hfi-skills/                     HFI-authored skills (Claude today)
 ```
 
 ## How to install
@@ -25,6 +27,14 @@ plugins/
 ```
 
 Run `/plugin marketplace update hfi` to pull the latest, or toggle automatic sync.
+
+**Codex (app, CLI, IDE).** Add the marketplace once from a terminal, then install from the Plugins page in the Codex app (or `/plugins` in the CLI). Installing prompts for the HFI Google sign-in.
+
+```
+codex plugin marketplace add mikedidierhfi/claude-plugins
+```
+
+**ChatGPT (Business / Enterprise workspace).** Teammates do not need developer mode. One workspace owner registers the deal server once (Settings, Apps & Connectors, Advanced, Developer mode on, Create with the MCP URL from `plugins/hfi-deals/.mcp.json` and OAuth), then publishes it from Plugins (Personal, open the plugin's menu, Publish) to the roles that should have it. Admins can also import this repo under Admin, Plugins, Add, Import marketplace, and set the installation policy per role. Each teammate signs in with their HFI Google account the first time.
 
 ## Release model
 
