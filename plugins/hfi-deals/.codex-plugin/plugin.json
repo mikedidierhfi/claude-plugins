@@ -1,6 +1,6 @@
 {
   "name": "hfi-deals",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bring the HFI deal pipeline into ChatGPT and Codex: browse the board, search every deal and document, read OMs and meeting notes, and update deals in plain English. Sign in with your HFI Google account; changes attribute to you.",
   "author": {
     "name": "HFI Capital Management"
@@ -8,6 +8,7 @@
   "repository": "https://github.com/mikedidierhfi/claude-plugins",
   "keywords": ["hfi", "deals", "deal-flow", "mcp", "private-equity", "real-estate"],
   "mcpServers": "./.mcp.json",
+  "apps": "./.app.json",
   "interface": {
     "displayName": "HFI Deals",
     "shortDescription": "The HFI deal board, searchable and editable in plain English",

@@ -26,7 +26,7 @@ plugins/
 .claude/settings.json             commit attribution disabled
 ```
 
-The `.mcp.json` shape (`mcpServers` -> `{type: "http", url}`) is what Claude and Codex both read, so keep a single file. ChatGPT itself does not run a bundled `.mcp.json`; it needs the server registered once as an MCP connection in developer mode and published to the workspace (see README), optionally referenced from an `.app.json` in the plugin.
+The `.mcp.json` shape (`mcpServers` -> `{type: "http", url}`) is what Claude and Codex both read, so keep a single file. ChatGPT itself does not run a bundled `.mcp.json`; it uses the MCP connection registered once in developer mode, whose id lives in `plugins/hfi-deals/.app.json`. Re-registering the server in ChatGPT changes that id; update the file.
 
 ## Releasing an update
 

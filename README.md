@@ -34,7 +34,7 @@ Run `/plugin marketplace update hfi` to pull the latest, or toggle automatic syn
 codex plugin marketplace add mikedidierhfi/claude-plugins
 ```
 
-**ChatGPT (Business / Enterprise workspace).** Teammates do not need developer mode. One workspace owner registers the deal server once (Settings, Apps & Connectors, Advanced, Developer mode on, Create with the MCP URL from `plugins/hfi-deals/.mcp.json` and OAuth), then publishes it from Plugins (Personal, open the plugin's menu, Publish) to the roles that should have it. Admins can also import this repo under Admin, Plugins, Add, Import marketplace, and set the installation policy per role. Each teammate signs in with their HFI Google account the first time.
+**ChatGPT.** The deal server is registered in ChatGPT already; `plugins/hfi-deals/.app.json` carries that registration, so the plugin works there too. Teammates do not need developer mode. In a Business or Enterprise workspace the owner publishes it once from Plugins (Personal, open the plugin's menu, Publish) to the roles that should have it, or imports this repo under Admin, Plugins, Add, Import marketplace and sets the installation policy per role. Each teammate signs in with their HFI Google account the first time.
 
 ## Release model
 

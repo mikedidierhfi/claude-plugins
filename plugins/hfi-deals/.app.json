@@ -1,0 +1,8 @@
+{
+  "apps": {
+    "hfi-deals": {
+      "id": "plugin_asdk_app_6aa055d53cdc8191933e958fa8c6f9ab",
+      "required": true
+    }
+  }
+}
