@@ -9,7 +9,7 @@ Connects Claude to the HFI deal pipeline. Read deal emails, attachments, meeting
 - **Read the source documents.** Open the text of deal emails, attached OMs, PDFs, decks, and meeting notes, without leaving Claude.
 - **Search the whole portfolio.** Semantic (RAG) search across every deal and document, or within a single deal, to find where something was mentioned.
 - **Track open items.** List, add, and resolve open questions and action items, each with your note attached.
-- **Update deals.** Change a deal's status or fields and add or edit team notes. Every change attributes to you and appears in the activity feed, exactly like the web UI.
+- **Update deals.** Change a deal's status or fields, and Claude logs what it did in the deal's AI notes (team notes stay for people). Every change attributes to you and appears in the activity feed, exactly like the web UI.
 - **Handle triage.** Review held messages and promote or dismiss them.
 - **Pull structured params.** Read the real estate deal and fund parameter tables when a deal has them.
 
